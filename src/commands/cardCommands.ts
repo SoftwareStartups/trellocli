@@ -43,7 +43,8 @@ export class CardCommands {
     listId: string,
     name: string,
     desc?: string,
-    due?: string
+    due?: string,
+    start?: string
   ): Promise<void> {
     if (!listId) {
       print(fail('List ID required', 'MISSING_PARAM'));
@@ -55,7 +56,7 @@ export class CardCommands {
       return;
     }
 
-    const result = await this.api.createCard(listId, name, desc, due);
+    const result = await this.api.createCard(listId, name, desc, due, start);
     print(result);
   }
 
@@ -65,7 +66,9 @@ export class CardCommands {
     desc?: string,
     due?: string,
     labels?: string,
-    members?: string
+    members?: string,
+    start?: string,
+    dueComplete?: string
   ): Promise<void> {
     if (!cardId) {
       print(fail('Card ID required', 'MISSING_PARAM'));
@@ -79,7 +82,9 @@ export class CardCommands {
       due,
       undefined,
       labels,
-      members
+      members,
+      start,
+      dueComplete
     );
     print(result);
   }
@@ -131,6 +136,70 @@ export class CardCommands {
     }
 
     const result = await this.api.addComment(cardId, text);
+    print(result);
+  }
+
+  async archiveCard(cardId: string): Promise<void> {
+    if (!cardId) {
+      print(fail('Card ID required', 'MISSING_PARAM'));
+      return;
+    }
+
+    const result = await this.api.archiveCard(cardId);
+    print(result);
+  }
+
+  async updateComment(
+    cardId: string,
+    commentId: string,
+    text: string
+  ): Promise<void> {
+    if (!cardId) {
+      print(fail('Card ID required', 'MISSING_PARAM'));
+      return;
+    }
+
+    if (!commentId) {
+      print(fail('Comment ID required', 'MISSING_PARAM'));
+      return;
+    }
+
+    if (!text) {
+      print(fail('Comment text required', 'MISSING_PARAM'));
+      return;
+    }
+
+    const result = await this.api.updateComment(cardId, commentId, text);
+    print(result);
+  }
+
+  async deleteComment(cardId: string, commentId: string): Promise<void> {
+    if (!cardId) {
+      print(fail('Card ID required', 'MISSING_PARAM'));
+      return;
+    }
+
+    if (!commentId) {
+      print(fail('Comment ID required', 'MISSING_PARAM'));
+      return;
+    }
+
+    const result = await this.api.deleteComment(cardId, commentId);
+    print(result);
+  }
+
+  async getMyCards(): Promise<void> {
+    const result = await this.api.getMyCards();
+    print(result);
+  }
+
+  async getCardHistory(cardId: string, limit?: string): Promise<void> {
+    if (!cardId) {
+      print(fail('Card ID required', 'MISSING_PARAM'));
+      return;
+    }
+
+    const result = await this.api.getCardHistory(cardId, limit);
     print(result);
   }
 }

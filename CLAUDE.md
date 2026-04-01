@@ -31,10 +31,14 @@ task compile:all                     # Build binaries for all 4 platforms
 src/
 ├── index.ts              # CLI entry point (arg parsing, command dispatch)
 ├── commands/
-│   ├── boardCommands.ts  # Board operations
-│   ├── listCommands.ts   # List operations
-│   ├── cardCommands.ts   # Card operations (CRUD, comments)
-│   └── attachmentCommands.ts  # Attachment operations
+│   ├── boardCommands.ts  # Board operations (CRUD, activity)
+│   ├── listCommands.ts   # List operations (CRUD, archive)
+│   ├── cardCommands.ts   # Card operations (CRUD, comments, archive, history)
+│   ├── attachmentCommands.ts  # Attachment operations
+│   ├── labelCommands.ts  # Label operations (CRUD)
+│   ├── memberCommands.ts # Member operations (list, assign, remove)
+│   ├── workspaceCommands.ts   # Workspace operations
+│   └── checklistCommands.ts   # Checklist operations (CRUD)
 ├── services/
 │   ├── configService.ts      # Auth config (~/.trello-cli/config.json + env vars)
 │   └── trelloApiService.ts   # Trello REST API client

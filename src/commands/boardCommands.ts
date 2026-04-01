@@ -23,4 +23,28 @@ export class BoardCommands {
     const result = await this.api.getBoard(boardId);
     print(result);
   }
+
+  async createBoard(
+    name: string,
+    desc?: string,
+    workspaceId?: string
+  ): Promise<void> {
+    if (!name) {
+      print(fail('Board name required', 'MISSING_PARAM'));
+      return;
+    }
+
+    const result = await this.api.createBoard(name, desc, workspaceId);
+    print(result);
+  }
+
+  async getBoardActivity(boardId: string, limit?: string): Promise<void> {
+    if (!boardId) {
+      print(fail('Board ID required', 'MISSING_PARAM'));
+      return;
+    }
+
+    const result = await this.api.getBoardActivity(boardId, limit);
+    print(result);
+  }
 }

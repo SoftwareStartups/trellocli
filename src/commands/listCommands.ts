@@ -33,4 +33,14 @@ export class ListCommands {
     const result = await this.api.createList(boardId, name);
     print(result);
   }
+
+  async archiveList(listId: string): Promise<void> {
+    if (!listId) {
+      print(fail('List ID required', 'MISSING_PARAM'));
+      return;
+    }
+
+    const result = await this.api.archiveList(listId);
+    print(result);
+  }
 }

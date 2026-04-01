@@ -22,6 +22,7 @@ export interface Card {
   idBoard: string;
   due?: string | null;
   dueComplete?: boolean;
+  start?: string | null;
   url?: string;
   labels?: Label[];
   idMembers?: string[];
@@ -31,6 +32,7 @@ export interface Label {
   id: string;
   name: string;
   color: string;
+  idBoard?: string;
 }
 
 export interface Comment {
@@ -39,6 +41,18 @@ export interface Comment {
   data: {
     text: string;
   };
+  memberCreator: {
+    id: string;
+    fullName: string;
+    username: string;
+  };
+}
+
+export interface CardAction {
+  id: string;
+  type: string;
+  date: string;
+  data: Record<string, unknown>;
   memberCreator: {
     id: string;
     fullName: string;
@@ -60,4 +74,28 @@ export interface Member {
   id: string;
   fullName: string;
   username: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  displayName: string;
+  desc?: string;
+  url?: string;
+}
+
+export interface Checklist {
+  id: string;
+  name: string;
+  idBoard: string;
+  idCard: string;
+  checkItems: CheckItem[];
+}
+
+export interface CheckItem {
+  id: string;
+  name: string;
+  state: 'complete' | 'incomplete';
+  idChecklist: string;
+  pos: number;
 }
