@@ -1,44 +1,45 @@
 {
   "name": "trello-cli-ts",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "A CLI tool for Trello integration with Claude Code",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "bin": {
-    "trello-cli": "dist/index.js"
+    "trello-cli": "build/index.js"
   },
   "files": [
-    "dist",
+    "build",
     "README.md"
   ],
   "scripts": {
     "build": "tsc",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm run build",
-    "start": "node dist/index.js",
-    "dev": "tsc && node dist/index.js"
+    "start": "bun run build/index.js",
+    "format": "bunx biome format --write .",
+    "format:check": "bunx biome format .",
+    "lint": "bunx biome lint .",
+    "typecheck": "tsc --noEmit -p tsconfig.check.json",
+    "postinstall": "lefthook install"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/marcosferr/trello-cli-ts.git"
+    "url": "git+https://github.com/SoftwareStartups/trellocli.git"
   },
   "bugs": {
-    "url": "https://github.com/marcosferr/trello-cli-ts/issues"
+    "url": "https://github.com/SoftwareStartups/trellocli/issues"
   },
-  "homepage": "https://github.com/marcosferr/trello-cli-ts#readme",
+  "homepage": "https://github.com/SoftwareStartups/trellocli#readme",
   "keywords": [
     "trello",
     "cli",
     "claude-code"
   ],
-  "author": "",
+  "author": "SoftwareStartups",
   "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0"
-  },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "@biomejs/biome": "^2.4.7",
+    "bun-types": "^1.3.10",
+    "lefthook": "^1.11.0",
+    "typescript": "^5.9.3"
   }
 }

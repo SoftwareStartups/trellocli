@@ -1,14 +1,14 @@
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
 
 interface ConfigData {
   apiKey?: string;
   token?: string;
 }
 
-const CONFIG_DIR = path.join(os.homedir(), ".trello-cli");
-const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
+const CONFIG_DIR = path.join(os.homedir(), '.trello-cli');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 export class ConfigService {
   public apiKey: string | undefined;
@@ -33,7 +33,7 @@ export class ConfigService {
     if (!fs.existsSync(CONFIG_FILE)) return;
 
     try {
-      const json = fs.readFileSync(CONFIG_FILE, "utf-8");
+      const json = fs.readFileSync(CONFIG_FILE, 'utf-8');
       const config: ConfigData = JSON.parse(json);
       if (config) {
         this.apiKey = this.apiKey ?? config.apiKey;
@@ -44,13 +44,16 @@ export class ConfigService {
     }
   }
 
-  static saveAuth(apiKey: string, token: string): { success: boolean; error?: string } {
+  static saveAuth(
+    apiKey: string,
+    token: string
+  ): { success: boolean; error?: string } {
     try {
       if (!apiKey?.trim()) {
-        return { success: false, error: "API Key cannot be empty" };
+        return { success: false, error: 'API Key cannot be empty' };
       }
       if (!token?.trim()) {
-        return { success: false, error: "Token cannot be empty" };
+        return { success: false, error: 'Token cannot be empty' };
       }
 
       if (!fs.existsSync(CONFIG_DIR)) {
@@ -83,11 +86,17 @@ export class ConfigService {
 
   validate(): { valid: boolean; error?: string } {
     if (!this.apiKey) {
-      return { valid: false, error: "API Key not set. Use: trello-cli --set-auth <api-key> <token>" };
+      return {
+        valid: false,
+        error: 'API Key not set. Use: trello-cli --set-auth <api-key> <token>',
+      };
     }
 
     if (!this.token) {
-      return { valid: false, error: "Token not set. Use: trello-cli --set-auth <api-key> <token>" };
+      return {
+        valid: false,
+        error: 'Token not set. Use: trello-cli --set-auth <api-key> <token>',
+      };
     }
 
     return { valid: true };

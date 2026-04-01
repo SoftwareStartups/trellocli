@@ -1,85 +1,21 @@
-# Node.js
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Build output
-dist/
 build/
-lib/
-esm/
-cjs/
-public/build/
-
-# TypeScript
+dist/
 *.tsbuildinfo
-# Compiled JavaScript
-**/*.js
-**/*.js.map
-
-# Coverage reports
-coverage/
-.nyc_output/
-coverage-*.json
-
-# Logs
-logs/
-*.log
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Runtime data
-tmp/
-temp/
-
-# Environment variables
 .env
-.env.*.local
 
-# Optional npm cache
-.npm
+# Claude
+/.claude/settings.local.json
 
-# Editor directories and files
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
+# Lefthook
+lefthook-local.yml
+
+# Worktrees
+.worktrees/
 
 # OS files
 .DS_Store
-Thumbs.db
 
-# Editor swap files
-*.swp
-*~
-
-# Yarn/Pnpm
-.yarn/*
-.pnp.*
-.pnpm-debug.log
-.pnpm-store/
-
-# Build system caches
-.cache/
-.parcel-cache/
-.rpt2_cache/
-.rts2_cache_cjs/
-.rollup.cache
-
-# Test output
-jest/cache/
-jest-*.json
-playwright-report/
-
-# Misc
-.eslintcache
-.cache-loader
-
-# Keep lockfiles committed (recommended), uncomment to ignore them if you prefer
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
+# Editor
+.vscode/
+.idea/

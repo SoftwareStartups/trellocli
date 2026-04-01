@@ -1,6 +1,6 @@
-import { TrelloApiService } from "../services/trelloApiService.js";
-import { fail } from "../models/apiResponse.js";
-import { print } from "../utils/outputFormatter.js";
+import type { TrelloApiService } from '../services/trelloApiService.js';
+import { fail } from '../models/apiResponse.js';
+import { print } from '../utils/outputFormatter.js';
 
 export class AttachmentCommands {
   private api: TrelloApiService;
@@ -11,7 +11,7 @@ export class AttachmentCommands {
 
   async getAttachments(cardId: string): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
@@ -25,12 +25,12 @@ export class AttachmentCommands {
     name?: string
   ): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
     if (!filePath) {
-      print(fail("File path required", "MISSING_PARAM"));
+      print(fail('File path required', 'MISSING_PARAM'));
       return;
     }
 
@@ -40,12 +40,12 @@ export class AttachmentCommands {
 
   async attachUrl(cardId: string, url: string, name?: string): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
     if (!url) {
-      print(fail("URL required", "MISSING_PARAM"));
+      print(fail('URL required', 'MISSING_PARAM'));
       return;
     }
 
@@ -55,12 +55,12 @@ export class AttachmentCommands {
 
   async deleteAttachment(cardId: string, attachmentId: string): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
     if (!attachmentId) {
-      print(fail("Attachment ID required", "MISSING_PARAM"));
+      print(fail('Attachment ID required', 'MISSING_PARAM'));
       return;
     }
 

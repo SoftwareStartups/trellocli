@@ -1,6 +1,6 @@
-import { TrelloApiService } from "../services/trelloApiService.js";
-import { fail } from "../models/apiResponse.js";
-import { print } from "../utils/outputFormatter.js";
+import type { TrelloApiService } from '../services/trelloApiService.js';
+import { fail } from '../models/apiResponse.js';
+import { print } from '../utils/outputFormatter.js';
 
 export class ListCommands {
   private api: TrelloApiService;
@@ -11,7 +11,7 @@ export class ListCommands {
 
   async getLists(boardId: string): Promise<void> {
     if (!boardId) {
-      print(fail("Board ID required", "MISSING_PARAM"));
+      print(fail('Board ID required', 'MISSING_PARAM'));
       return;
     }
 
@@ -21,12 +21,12 @@ export class ListCommands {
 
   async createList(boardId: string, name: string): Promise<void> {
     if (!boardId) {
-      print(fail("Board ID required", "MISSING_PARAM"));
+      print(fail('Board ID required', 'MISSING_PARAM'));
       return;
     }
 
     if (!name) {
-      print(fail("List name required", "MISSING_PARAM"));
+      print(fail('List name required', 'MISSING_PARAM'));
       return;
     }
 

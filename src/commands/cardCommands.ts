@@ -1,6 +1,6 @@
-import { TrelloApiService } from "../services/trelloApiService.js";
-import { fail } from "../models/apiResponse.js";
-import { print } from "../utils/outputFormatter.js";
+import type { TrelloApiService } from '../services/trelloApiService.js';
+import { fail } from '../models/apiResponse.js';
+import { print } from '../utils/outputFormatter.js';
 
 export class CardCommands {
   private api: TrelloApiService;
@@ -11,7 +11,7 @@ export class CardCommands {
 
   async getCards(listId: string): Promise<void> {
     if (!listId) {
-      print(fail("List ID required", "MISSING_PARAM"));
+      print(fail('List ID required', 'MISSING_PARAM'));
       return;
     }
 
@@ -21,7 +21,7 @@ export class CardCommands {
 
   async getAllCards(boardId: string): Promise<void> {
     if (!boardId) {
-      print(fail("Board ID required", "MISSING_PARAM"));
+      print(fail('Board ID required', 'MISSING_PARAM'));
       return;
     }
 
@@ -31,7 +31,7 @@ export class CardCommands {
 
   async getCard(cardId: string): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
@@ -46,12 +46,12 @@ export class CardCommands {
     due?: string
   ): Promise<void> {
     if (!listId) {
-      print(fail("List ID required", "MISSING_PARAM"));
+      print(fail('List ID required', 'MISSING_PARAM'));
       return;
     }
 
     if (!name) {
-      print(fail("Card name required", "MISSING_PARAM"));
+      print(fail('Card name required', 'MISSING_PARAM'));
       return;
     }
 
@@ -68,22 +68,30 @@ export class CardCommands {
     members?: string
   ): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
-    const result = await this.api.updateCard(cardId, name, desc, due, undefined, labels, members);
+    const result = await this.api.updateCard(
+      cardId,
+      name,
+      desc,
+      due,
+      undefined,
+      labels,
+      members
+    );
     print(result);
   }
 
   async moveCard(cardId: string, listId: string): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
     if (!listId) {
-      print(fail("List ID required", "MISSING_PARAM"));
+      print(fail('List ID required', 'MISSING_PARAM'));
       return;
     }
 
@@ -93,7 +101,7 @@ export class CardCommands {
 
   async deleteCard(cardId: string): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
@@ -103,7 +111,7 @@ export class CardCommands {
 
   async getComments(cardId: string): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
@@ -113,12 +121,12 @@ export class CardCommands {
 
   async addComment(cardId: string, text: string): Promise<void> {
     if (!cardId) {
-      print(fail("Card ID required", "MISSING_PARAM"));
+      print(fail('Card ID required', 'MISSING_PARAM'));
       return;
     }
 
     if (!text) {
-      print(fail("Comment text required", "MISSING_PARAM"));
+      print(fail('Comment text required', 'MISSING_PARAM'));
       return;
     }
 

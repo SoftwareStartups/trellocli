@@ -1,8 +1,8 @@
 # Trello CLI
 
-A Node.js CLI tool that provides Trello integration with Claude Code. Manage your Trello boards, lists, and cards using natural language through Claude Code.
+A Bun-native TypeScript CLI for Trello integration with Claude Code. Manage your Trello boards, lists, and cards using natural language through Claude Code.
 
-> **Based on:** This project is a TypeScript/Node.js port of the original [ZenoxZX/trello-cli](https://github.com/ZenoxZX/trello-cli) which was built with .NET.
+> **Attribution:** This project is based on [trello-cli-ts](https://github.com/marcosferr/trello-cli-ts) by Marcos Ferreira, itself a TypeScript port of [ZenoxZX/trello-cli](https://github.com/ZenoxZX/trello-cli) (.NET). Now maintained by [SoftwareStartups](https://github.com/SoftwareStartups).
 
 ## What is it?
 
@@ -16,45 +16,42 @@ A Node.js CLI tool that provides Trello integration with Claude Code. Manage you
 
 ## Installation
 
-### Prerequisites
+### From GitHub Releases (recommended)
 
-- **Node.js 18.0 or later** (uses native fetch)
-- Trello account with API access
-
-### Install from Source
+Download a pre-compiled binary for your platform from [GitHub Releases](https://github.com/SoftwareStartups/trellocli/releases):
 
 ```bash
-# Clone the repository
-git clone https://github.com/marcosferr/trello-cli-ts.git
-cd trello-cli
+# macOS (Apple Silicon)
+curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trello-cli-darwin-arm64 -o trello-cli
+chmod +x trello-cli
+sudo mv trello-cli /usr/local/bin/
 
-# Install dependencies
-npm install
+# macOS (Intel)
+curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trello-cli-darwin-x64 -o trello-cli
+chmod +x trello-cli
+sudo mv trello-cli /usr/local/bin/
 
-# Build TypeScript
-npm run build
+# Linux (x64)
+curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trello-cli-linux-x64 -o trello-cli
+chmod +x trello-cli
+sudo mv trello-cli /usr/local/bin/
 
-# Install globally (makes 'trello-cli' available everywhere)
-npm link
-
-# Verify installation
-trello-cli --help
+# Linux (ARM64)
+curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trello-cli-linux-arm64 -o trello-cli
+chmod +x trello-cli
+sudo mv trello-cli /usr/local/bin/
 ```
 
-### Alternative: Run without Global Install
+### From Source
+
+Prerequisites: [Bun](https://bun.sh) and [Task](https://taskfile.dev)
 
 ```bash
-# Run directly with node
-node dist/index.js --help
-
-# Or use npm script
-npm start -- --help
-```
-
-### Uninstalling
-
-```bash
-npm unlink -g trello-cli
+git clone https://github.com/SoftwareStartups/trellocli.git
+cd trellocli
+bun install
+task build
+bun link
 ```
 
 ### Setting Up Trello API Credentials
@@ -67,14 +64,11 @@ npm unlink -g trello-cli
 3. Configure the CLI:
 
 ```bash
-# Set your credentials
 trello-cli --set-auth <api-key> <token>
-
-# Verify authentication
 trello-cli --check-auth
 ```
 
-> ⚠️ **Important:** The Token is different from the Secret. The Secret is for OAuth apps—you need the Token for direct API access.
+> **Important:** The Token is different from the Secret. The Secret is for OAuth apps — you need the Token for direct API access.
 
 ## Usage with Claude Code
 
@@ -89,59 +83,13 @@ Simply mention "Trello" when talking to Claude Code:
 
 ## Claude Code Skills
 
-This repo includes a **Claude Code Skill** that teaches Claude how to use this CLI effectively.
-
-### What is a Skill?
-
-Skills are markdown files with YAML frontmatter that define how Claude Code should use specific tools. When you mention "Trello", Claude automatically loads the skill and knows exactly which commands to run.
+This repo includes a Claude Code Skill that teaches Claude how to use this CLI effectively. When you mention "Trello", Claude automatically loads the skill and knows which commands to run.
 
 ### Installing the Skill
 
-Copy the skill folder to your personal `.claude` directory:
-
 ```bash
-# Linux/macOS
 cp -r .claude/skills/trello-cli ~/.claude/skills/
-
-# Windows (PowerShell)
-Copy-Item -Recurse .claude\skills\trello-cli $env:USERPROFILE\.claude\skills\
 ```
-
-After this, Claude Code will automatically activate this skill whenever you mention "Trello" in any project.
-
-### Skill Structure
-
-```
-~/.claude/
-└── skills/
-    └── trello-cli/
-        ├── SKILL.md       # Main skill definition (trigger rules, quick reference)
-        └── REFERENCE.md   # Detailed command documentation
-```
-
-### SKILL.md Format
-
-```markdown
----
-name: trello-cli
-description: Trello board, list and card management via CLI...
----
-
-# Skill Content
-...
-```
-
-- **name**: Unique identifier for the skill
-- **description**: Determines when Claude activates this skill (contains trigger words like "Trello")
-
-## Documentation
-
-| File | Description |
-|------|-------------|
-| [docs/instruction.md](docs/instruction.md) | Detailed command reference and usage examples for AI |
-| [docs/system-prompt.md](docs/system-prompt.md) | System prompt for AI integration |
-| [.claude/skills/trello-cli/SKILL.md](.claude/skills/trello-cli/SKILL.md) | Claude Code skill definition |
-| [.claude/skills/trello-cli/REFERENCE.md](.claude/skills/trello-cli/REFERENCE.md) | Complete command documentation |
 
 ## Command Summary
 
@@ -179,36 +127,38 @@ trello-cli --attach-url <card-id> <url> [--name "<name>"]
 trello-cli --delete-attachment <card-id> <attachment-id>
 ```
 
-> **Note:** Downloading attachments is not supported—Trello's download API requires browser authentication. Use `--attach-url` to link attachments.
-
-## Project Structure
-
-```
-trello-cli/
-├── src/                    # TypeScript source code
-│   ├── index.ts            # CLI entry point
-│   ├── commands/           # Command handlers
-│   ├── services/           # API and config services
-│   ├── models/             # Type definitions
-│   └── utils/              # Output formatting
-├── dist/                   # Compiled JavaScript (generated)
-├── .claude/skills/         # Claude Code skill definition
-├── docs/                   # Documentation
-├── package.json
-└── tsconfig.json
-```
+> **Note:** Downloading attachments is not supported — Trello's download API requires browser authentication. Use `--attach-url` to link attachments.
 
 ## Development
 
 ```bash
-# Install dependencies
-npm install
+bun install                    # Install dependencies
+task build                     # Compile TypeScript
+task check                     # Lint + typecheck
+task format                    # Format with Biome
+task ci                        # Full CI pipeline locally
+task compile                   # Build standalone binary
+```
 
-# Build
-npm run build
+## Project Structure
 
-# Run in development
-npm run dev -- --get-boards
+```
+trellocli/
+├── src/                       # TypeScript source code
+│   ├── index.ts               # CLI entry point
+│   ├── commands/              # Command handlers
+│   ├── services/              # API and config services
+│   ├── models/                # Type definitions
+│   └── utils/                 # Output formatting
+├── build/                     # Compiled JavaScript (generated)
+├── dist/                      # Standalone binaries (generated)
+├── .claude/skills/            # Claude Code skill definition
+├── .github/workflows/         # CI and release workflows
+├── docs/                      # Documentation
+├── Taskfile.yml               # Task runner config
+├── biome.json                 # Linter/formatter config
+├── package.json
+└── tsconfig.json
 ```
 
 ## License

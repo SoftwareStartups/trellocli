@@ -1,15 +1,15 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
-import { ConfigService } from "./services/configService.js";
-import { TrelloApiService } from "./services/trelloApiService.js";
-import { BoardCommands } from "./commands/boardCommands.js";
-import { ListCommands } from "./commands/listCommands.js";
-import { CardCommands } from "./commands/cardCommands.js";
-import { AttachmentCommands } from "./commands/attachmentCommands.js";
-import { success, fail } from "./models/apiResponse.js";
-import { print } from "./utils/outputFormatter.js";
+import { ConfigService } from './services/configService.js';
+import { TrelloApiService } from './services/trelloApiService.js';
+import { BoardCommands } from './commands/boardCommands.js';
+import { ListCommands } from './commands/listCommands.js';
+import { CardCommands } from './commands/cardCommands.js';
+import { AttachmentCommands } from './commands/attachmentCommands.js';
+import { success, fail } from './models/apiResponse.js';
+import { print } from './utils/outputFormatter.js';
 
-const VERSION = "1.0.0";
+const VERSION = '1.1.0';
 
 function showHelp(): void {
   console.log(`
@@ -54,7 +54,7 @@ Options:
 }
 
 function getArg(args: string[], index: number): string {
-  return args[index] ?? "";
+  return args[index] ?? '';
 }
 
 function getNamedArg(args: string[], name: string): string | undefined {
@@ -70,50 +70,52 @@ async function main(): Promise<void> {
   const config = new ConfigService();
 
   // Check for help/version first
-  if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
+  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     showHelp();
     return;
   }
 
-  if (args[0] === "--version" || args[0] === "-v") {
+  if (args[0] === '--version' || args[0] === '-v') {
     console.log(`trello-cli v${VERSION}`);
     return;
   }
 
   // Handle auth config commands (no validation needed)
-  if (args[0] === "--set-auth") {
+  if (args[0] === '--set-auth') {
     const apiKey = getArg(args, 1);
     const token = getArg(args, 2);
 
     if (!apiKey || !token) {
-      print(fail("Usage: trello-cli --set-auth <api-key> <token>", "MISSING_PARAM"));
+      print(
+        fail('Usage: trello-cli --set-auth <api-key> <token>', 'MISSING_PARAM')
+      );
       return;
     }
 
     const { success: ok, error } = ConfigService.saveAuth(apiKey, token);
     if (ok) {
-      print(success({ message: "Auth saved to ~/.trello-cli/config.json" }));
+      print(success({ message: 'Auth saved to ~/.trello-cli/config.json' }));
     } else {
-      print(fail(error!, "SAVE_ERROR"));
+      print(fail(error ?? 'Unknown error', 'SAVE_ERROR'));
     }
     return;
   }
 
-  if (args[0] === "--clear-auth") {
+  if (args[0] === '--clear-auth') {
     const { success: ok, error } = ConfigService.clearAuth();
     if (ok) {
-      print(success({ message: "Auth cleared" }));
+      print(success({ message: 'Auth cleared' }));
     } else {
-      print(fail(error!, "CLEAR_ERROR"));
+      print(fail(error ?? 'Unknown error', 'CLEAR_ERROR'));
     }
     return;
   }
 
   // Validate auth for all other commands except check-auth
-  if (args[0] !== "--check-auth") {
+  if (args[0] !== '--check-auth') {
     const { valid, error } = config.validate();
     if (!valid) {
-      print(fail(error!, "AUTH_ERROR"));
+      print(fail(error ?? 'Auth not configured', 'AUTH_ERROR'));
       return;
     }
   }
@@ -125,9 +127,17 @@ async function main(): Promise<void> {
   const attachCmd = new AttachmentCommands(api);
 
   try {
-    await executeCommand(args, config, api, boardCmd, listCmd, cardCmd, attachCmd);
+    await executeCommand(
+      args,
+      config,
+      api,
+      boardCmd,
+      listCmd,
+      cardCmd,
+      attachCmd
+    );
   } catch (ex) {
-    print(fail((ex as Error).message, "ERROR"));
+    print(fail((ex as Error).message, 'ERROR'));
   }
 }
 
@@ -144,10 +154,10 @@ async function executeCommand(
 
   switch (command) {
     // Auth
-    case "--check-auth": {
+    case '--check-auth': {
       const { valid, error } = config.validate();
       if (!valid) {
-        print(fail(error!, "AUTH_ERROR"));
+        print(fail(error ?? 'Auth not configured', 'AUTH_ERROR'));
         return;
       }
       const authResult = await api.checkAuth();
@@ -156,99 +166,99 @@ async function executeCommand(
     }
 
     // Board commands
-    case "--get-boards":
+    case '--get-boards':
       await boardCmd.getBoards();
       break;
 
-    case "--get-board":
+    case '--get-board':
       await boardCmd.getBoard(getArg(args, 1));
       break;
 
     // List commands
-    case "--get-lists":
+    case '--get-lists':
       await listCmd.getLists(getArg(args, 1));
       break;
 
-    case "--create-list":
+    case '--create-list':
       await listCmd.createList(getArg(args, 1), getArg(args, 2));
       break;
 
     // Card commands
-    case "--get-cards":
+    case '--get-cards':
       await cardCmd.getCards(getArg(args, 1));
       break;
 
-    case "--get-all-cards":
+    case '--get-all-cards':
       await cardCmd.getAllCards(getArg(args, 1));
       break;
 
-    case "--get-card":
+    case '--get-card':
       await cardCmd.getCard(getArg(args, 1));
       break;
 
-    case "--create-card":
+    case '--create-card':
       await cardCmd.createCard(
         getArg(args, 1),
         getArg(args, 2),
-        getNamedArg(args, "--desc"),
-        getNamedArg(args, "--due")
+        getNamedArg(args, '--desc'),
+        getNamedArg(args, '--due')
       );
       break;
 
-    case "--update-card":
+    case '--update-card':
       await cardCmd.updateCard(
         getArg(args, 1),
-        getNamedArg(args, "--name"),
-        getNamedArg(args, "--desc"),
-        getNamedArg(args, "--due"),
-        getNamedArg(args, "--labels"),
-        getNamedArg(args, "--members")
+        getNamedArg(args, '--name'),
+        getNamedArg(args, '--desc'),
+        getNamedArg(args, '--due'),
+        getNamedArg(args, '--labels'),
+        getNamedArg(args, '--members')
       );
       break;
 
-    case "--move-card":
+    case '--move-card':
       await cardCmd.moveCard(getArg(args, 1), getArg(args, 2));
       break;
 
-    case "--delete-card":
+    case '--delete-card':
       await cardCmd.deleteCard(getArg(args, 1));
       break;
 
-    case "--get-comments":
+    case '--get-comments':
       await cardCmd.getComments(getArg(args, 1));
       break;
 
-    case "--add-comment":
+    case '--add-comment':
       await cardCmd.addComment(getArg(args, 1), getArg(args, 2));
       break;
 
     // Attachment commands
-    case "--list-attachments":
+    case '--list-attachments':
       await attachCmd.getAttachments(getArg(args, 1));
       break;
 
-    case "--upload-attachment":
+    case '--upload-attachment':
       await attachCmd.uploadAttachment(
         getArg(args, 1),
         getArg(args, 2),
-        getNamedArg(args, "--name")
+        getNamedArg(args, '--name')
       );
       break;
 
-    case "--attach-url":
+    case '--attach-url':
       await attachCmd.attachUrl(
         getArg(args, 1),
         getArg(args, 2),
-        getNamedArg(args, "--name")
+        getNamedArg(args, '--name')
       );
       break;
 
-    case "--delete-attachment":
+    case '--delete-attachment':
       await attachCmd.deleteAttachment(getArg(args, 1), getArg(args, 2));
       break;
 
     default:
-      print(fail(`Unknown command: ${command}`, "UNKNOWN_COMMAND"));
+      print(fail(`Unknown command: ${command}`, 'UNKNOWN_COMMAND'));
       break;
   }
 }

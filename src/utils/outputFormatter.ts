@@ -1,4 +1,4 @@
-import type { ApiResponse } from "../models/apiResponse.js";
+import type { ApiResponse } from '../models/apiResponse.js';
 
 /**
  * Removes null/undefined values from object (shallow)

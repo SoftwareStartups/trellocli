@@ -1,6 +1,9 @@
 MIT License
 
-Copyright (c) 2026 Marcos Ferreira
+Copyright (c) 2026 SoftwareStartups
+
+Based on trello-cli-ts by Marcos Ferreira (https://github.com/marcosferr/trello-cli-ts),
+itself a TypeScript port of ZenoxZX/trello-cli (https://github.com/ZenoxZX/trello-cli).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
