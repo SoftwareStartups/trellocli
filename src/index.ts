@@ -1,5 +1,7 @@
 #!/usr/bin/env bun
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { ConfigService } from './services/configService.js';
 import { TrelloApiService } from './services/trelloApiService.js';
 import { BoardCommands } from './commands/boardCommands.js';
@@ -12,8 +14,21 @@ import { WorkspaceCommands } from './commands/workspaceCommands.js';
 import { ChecklistCommands } from './commands/checklistCommands.js';
 import { success, fail } from './models/apiResponse.js';
 import { print } from './utils/outputFormatter.js';
+import { errorMessage } from './utils/errorUtils.js';
 
-const VERSION = '1.1.0';
+function readVersion(): string {
+  try {
+    const pkgPath = path.join(import.meta.dir, '..', 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as {
+      version: string;
+    };
+    return pkg.version;
+  } catch {
+    return '1.1.0';
+  }
+}
+
+const VERSION = readVersion();
 
 function showHelp(): void {
   console.log(`
@@ -128,7 +143,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    const { success: ok, error } = ConfigService.saveAuth(apiKey, token);
+    const { success: ok, error } = config.saveAuth(apiKey, token);
     if (ok) {
       print(success({ message: 'Auth saved to ~/.trello-cli/config.json' }));
     } else {
@@ -138,7 +153,7 @@ async function main(): Promise<void> {
   }
 
   if (args[0] === '--clear-auth') {
-    const { success: ok, error } = ConfigService.clearAuth();
+    const { success: ok, error } = config.clearAuth();
     if (ok) {
       print(success({ message: 'Auth cleared' }));
     } else {
@@ -167,7 +182,7 @@ async function main(): Promise<void> {
   const checklistCmd = new ChecklistCommands(api);
 
   try {
-    await executeCommand(
+    await executeCommand({
       args,
       config,
       api,
@@ -178,114 +193,87 @@ async function main(): Promise<void> {
       labelCmd,
       memberCmd,
       workspaceCmd,
-      checklistCmd
-    );
+      checklistCmd,
+    });
   } catch (ex) {
-    print(fail((ex as Error).message, 'ERROR'));
+    print(fail(errorMessage(ex), 'ERROR'));
   }
 }
 
-async function executeCommand(
-  args: string[],
-  config: ConfigService,
-  api: TrelloApiService,
-  boardCmd: BoardCommands,
-  listCmd: ListCommands,
-  cardCmd: CardCommands,
-  attachCmd: AttachmentCommands,
-  labelCmd: LabelCommands,
-  memberCmd: MemberCommands,
-  workspaceCmd: WorkspaceCommands,
-  checklistCmd: ChecklistCommands
-): Promise<void> {
-  const command = args[0];
+interface CommandContext {
+  args: string[];
+  config: ConfigService;
+  api: TrelloApiService;
+  boardCmd: BoardCommands;
+  listCmd: ListCommands;
+  cardCmd: CardCommands;
+  attachCmd: AttachmentCommands;
+  labelCmd: LabelCommands;
+  memberCmd: MemberCommands;
+  workspaceCmd: WorkspaceCommands;
+  checklistCmd: ChecklistCommands;
+}
 
-  switch (command) {
+async function executeCommand(ctx: CommandContext): Promise<void> {
+  const {
+    args,
+    config,
+    api,
+    boardCmd,
+    listCmd,
+    cardCmd,
+    attachCmd,
+    labelCmd,
+    memberCmd,
+    workspaceCmd,
+    checklistCmd,
+  } = ctx;
+
+  const commands: Record<string, () => Promise<void>> = {
     // Auth
-    case '--check-auth': {
+    '--check-auth': async () => {
       const { valid, error } = config.validate();
       if (!valid) {
         print(fail(error ?? 'Auth not configured', 'AUTH_ERROR'));
         return;
       }
-      const authResult = await api.checkAuth();
-      print(authResult);
-      break;
-    }
+      print(await api.checkAuth());
+    },
 
     // Board commands
-    case '--get-boards':
-      await boardCmd.getBoards();
-      break;
-
-    case '--get-board':
-      await boardCmd.getBoard(getArg(args, 1));
-      break;
-
-    case '--create-board':
-      await boardCmd.createBoard(
+    '--get-boards': () => boardCmd.getBoards(),
+    '--get-board': () => boardCmd.getBoard(getArg(args, 1)),
+    '--create-board': () =>
+      boardCmd.createBoard(
         getArg(args, 1),
         getNamedArg(args, '--desc'),
         getNamedArg(args, '--workspace')
-      );
-      break;
-
-    case '--get-board-activity':
-      await boardCmd.getBoardActivity(
-        getArg(args, 1),
-        getNamedArg(args, '--limit')
-      );
-      break;
+      ),
+    '--get-board-activity': () =>
+      boardCmd.getBoardActivity(getArg(args, 1), getNamedArg(args, '--limit')),
 
     // List commands
-    case '--get-lists':
-      await listCmd.getLists(getArg(args, 1));
-      break;
-
-    case '--create-list':
-      await listCmd.createList(getArg(args, 1), getArg(args, 2));
-      break;
-
-    case '--archive-list':
-      await listCmd.archiveList(getArg(args, 1));
-      break;
+    '--get-lists': () => listCmd.getLists(getArg(args, 1)),
+    '--create-list': () => listCmd.createList(getArg(args, 1), getArg(args, 2)),
+    '--archive-list': () => listCmd.archiveList(getArg(args, 1)),
 
     // Card commands
-    case '--get-cards':
-      await cardCmd.getCards(getArg(args, 1));
-      break;
-
-    case '--get-all-cards':
-      await cardCmd.getAllCards(getArg(args, 1));
-      break;
-
-    case '--get-my-cards':
-      await cardCmd.getMyCards();
-      break;
-
-    case '--get-card':
-      await cardCmd.getCard(getArg(args, 1));
-      break;
-
-    case '--get-card-history':
-      await cardCmd.getCardHistory(
-        getArg(args, 1),
-        getNamedArg(args, '--limit')
-      );
-      break;
-
-    case '--create-card':
-      await cardCmd.createCard(
+    '--get-cards': () => cardCmd.getCards(getArg(args, 1)),
+    '--get-all-cards': () => cardCmd.getAllCards(getArg(args, 1)),
+    '--get-my-cards': () => cardCmd.getMyCards(),
+    '--get-card': () => cardCmd.getCard(getArg(args, 1)),
+    '--get-card-history': () =>
+      cardCmd.getCardHistory(getArg(args, 1), getNamedArg(args, '--limit')),
+    '--create-card': () =>
+      cardCmd.createCard(
         getArg(args, 1),
         getArg(args, 2),
         getNamedArg(args, '--desc'),
         getNamedArg(args, '--due'),
         getNamedArg(args, '--start')
-      );
-      break;
-
-    case '--update-card':
-      await cardCmd.updateCard(
+      ),
+    '--update-card': () =>
+      cardCmd.updateCard(
         getArg(args, 1),
         getNamedArg(args, '--name'),
         getNamedArg(args, '--desc'),
@@ -294,144 +282,87 @@ async function executeCommand(
         getNamedArg(args, '--members'),
         getNamedArg(args, '--start'),
         args.includes('--due-complete') ? 'true' : undefined
-      );
-      break;
-
-    case '--move-card':
-      await cardCmd.moveCard(getArg(args, 1), getArg(args, 2));
-      break;
-
-    case '--archive-card':
-      await cardCmd.archiveCard(getArg(args, 1));
-      break;
-
-    case '--delete-card':
-      await cardCmd.deleteCard(getArg(args, 1));
-      break;
+      ),
+    '--move-card': () => cardCmd.moveCard(getArg(args, 1), getArg(args, 2)),
+    '--archive-card': () => cardCmd.archiveCard(getArg(args, 1)),
+    '--delete-card': () => cardCmd.deleteCard(getArg(args, 1)),
 
     // Comment commands
-    case '--get-comments':
-      await cardCmd.getComments(getArg(args, 1));
-      break;
-
-    case '--add-comment':
-      await cardCmd.addComment(getArg(args, 1), getArg(args, 2));
-      break;
-
-    case '--update-comment':
-      await cardCmd.updateComment(
-        getArg(args, 1),
-        getArg(args, 2),
-        getArg(args, 3)
-      );
-      break;
-
-    case '--delete-comment':
-      await cardCmd.deleteComment(getArg(args, 1), getArg(args, 2));
-      break;
+    '--get-comments': () => cardCmd.getComments(getArg(args, 1)),
+    '--add-comment': () => cardCmd.addComment(getArg(args, 1), getArg(args, 2)),
+    '--update-comment': () =>
+      cardCmd.updateComment(getArg(args, 1), getArg(args, 2), getArg(args, 3)),
+    '--delete-comment': () =>
+      cardCmd.deleteComment(getArg(args, 1), getArg(args, 2)),
 
     // Attachment commands
-    case '--list-attachments':
-      await attachCmd.getAttachments(getArg(args, 1));
-      break;
-
-    case '--upload-attachment':
-      await attachCmd.uploadAttachment(
+    '--list-attachments': () => attachCmd.getAttachments(getArg(args, 1)),
+    '--upload-attachment': () =>
+      attachCmd.uploadAttachment(
         getArg(args, 1),
         getArg(args, 2),
         getNamedArg(args, '--name')
-      );
-      break;
-
-    case '--attach-url':
-      await attachCmd.attachUrl(
+      ),
+    '--attach-url': () =>
+      attachCmd.attachUrl(
         getArg(args, 1),
         getArg(args, 2),
         getNamedArg(args, '--name')
-      );
-      break;
-
-    case '--delete-attachment':
-      await attachCmd.deleteAttachment(getArg(args, 1), getArg(args, 2));
-      break;
+      ),
+    '--delete-attachment': () =>
+      attachCmd.deleteAttachment(getArg(args, 1), getArg(args, 2)),
 
     // Label commands
-    case '--get-board-labels':
-      await labelCmd.getBoardLabels(getArg(args, 1));
-      break;
-
-    case '--create-label':
-      await labelCmd.createLabel(
-        getArg(args, 1),
-        getArg(args, 2),
-        getArg(args, 3)
-      );
-      break;
-
-    case '--update-label':
-      await labelCmd.updateLabel(
+    '--get-board-labels': () => labelCmd.getBoardLabels(getArg(args, 1)),
+    '--create-label': () =>
+      labelCmd.createLabel(getArg(args, 1), getArg(args, 2), getArg(args, 3)),
+    '--update-label': () =>
+      labelCmd.updateLabel(
         getArg(args, 1),
         getNamedArg(args, '--name'),
         getNamedArg(args, '--color')
-      );
-      break;
-
-    case '--delete-label':
-      await labelCmd.deleteLabel(getArg(args, 1));
-      break;
+      ),
+    '--delete-label': () => labelCmd.deleteLabel(getArg(args, 1)),
 
     // Member commands
-    case '--get-board-members':
-      await memberCmd.getBoardMembers(getArg(args, 1));
-      break;
-
-    case '--assign-member':
-      await memberCmd.assignMember(getArg(args, 1), getArg(args, 2));
-      break;
-
-    case '--remove-member':
-      await memberCmd.removeMember(getArg(args, 1), getArg(args, 2));
-      break;
+    '--get-board-members': () => memberCmd.getBoardMembers(getArg(args, 1)),
+    '--assign-member': () =>
+      memberCmd.assignMember(getArg(args, 1), getArg(args, 2)),
+    '--remove-member': () =>
+      memberCmd.removeMember(getArg(args, 1), getArg(args, 2)),
 
     // Workspace commands
-    case '--get-workspaces':
-      await workspaceCmd.getWorkspaces();
-      break;
-
-    case '--get-workspace-boards':
-      await workspaceCmd.getWorkspaceBoards(getArg(args, 1));
-      break;
+    '--get-workspaces': () => workspaceCmd.getWorkspaces(),
+    '--get-workspace-boards': () =>
+      workspaceCmd.getWorkspaceBoards(getArg(args, 1)),
 
     // Checklist commands
-    case '--get-checklists':
-      await checklistCmd.getChecklists(getArg(args, 1));
-      break;
-
-    case '--create-checklist':
-      await checklistCmd.createChecklist(getArg(args, 1), getArg(args, 2));
-      break;
-
-    case '--add-checklist-item':
-      await checklistCmd.addChecklistItem(getArg(args, 1), getArg(args, 2));
-      break;
-
-    case '--update-checklist-item':
-      await checklistCmd.updateChecklistItem(
+    '--get-checklists': () => checklistCmd.getChecklists(getArg(args, 1)),
+    '--create-checklist': () =>
+      checklistCmd.createChecklist(getArg(args, 1), getArg(args, 2)),
+    '--add-checklist-item': () =>
+      checklistCmd.addChecklistItem(getArg(args, 1), getArg(args, 2)),
+    '--update-checklist-item': () =>
+      checklistCmd.updateChecklistItem(
         getArg(args, 1),
         getArg(args, 2),
         getNamedArg(args, '--name'),
         getNamedArg(args, '--state')
-      );
-      break;
+      ),
+    '--delete-checklist': () => checklistCmd.deleteChecklist(getArg(args, 1)),
+  };
 
-    case '--delete-checklist':
-      await checklistCmd.deleteChecklist(getArg(args, 1));
-      break;
-
-    default:
-      print(fail(`Unknown command: ${command}`, 'UNKNOWN_COMMAND'));
-      break;
+  const handler = commands[args[0]];
+  if (handler) {
+    await handler();
+  } else {
+    print(fail(`Unknown command: ${args[0]}`, 'UNKNOWN_COMMAND'));
   }
 }
 
-main();
+main().catch((ex: unknown) => {
+  console.error(
+    JSON.stringify({ ok: false, error: errorMessage(ex), code: 'FATAL' })
+  );
+  process.exit(1);
+});

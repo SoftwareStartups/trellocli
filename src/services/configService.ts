@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { errorMessage } from '../utils/errorUtils.js';
 
 interface ConfigData {
   apiKey?: string;
@@ -44,7 +45,7 @@ export class ConfigService {
     }
   }
 
-  static saveAuth(
+  saveAuth(
     apiKey: string,
     token: string
   ): { success: boolean; error?: string } {
@@ -57,26 +58,26 @@ export class ConfigService {
       }
 
       if (!fs.existsSync(CONFIG_DIR)) {
-        fs.mkdirSync(CONFIG_DIR, { recursive: true });
+        fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
       }
 
       const config: ConfigData = { apiKey, token };
-      fs.writeFileSync(CONFIG_FILE, JSON.stringify(config));
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify(config), { mode: 0o600 });
 
       return { success: true };
     } catch (ex) {
-      return { success: false, error: (ex as Error).message };
+      return { success: false, error: errorMessage(ex) };
     }
   }
 
-  static clearAuth(): { success: boolean; error?: string } {
+  clearAuth(): { success: boolean; error?: string } {
     try {
       if (fs.existsSync(CONFIG_FILE)) {
         fs.unlinkSync(CONFIG_FILE);
       }
       return { success: true };
     } catch (ex) {
-      return { success: false, error: (ex as Error).message };
+      return { success: false, error: errorMessage(ex) };
     }
   }
 

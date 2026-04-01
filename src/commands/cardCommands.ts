@@ -1,6 +1,6 @@
 import type { TrelloApiService } from '../services/trelloApiService.js';
-import { fail } from '../models/apiResponse.js';
 import { print } from '../utils/outputFormatter.js';
+import { requireParam } from '../utils/paramValidation.js';
 
 export class CardCommands {
   private api: TrelloApiService;
@@ -10,30 +10,21 @@ export class CardCommands {
   }
 
   async getCards(listId: string): Promise<void> {
-    if (!listId) {
-      print(fail('List ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(listId, 'List ID')) return;
 
     const result = await this.api.getCardsInList(listId);
     print(result);
   }
 
   async getAllCards(boardId: string): Promise<void> {
-    if (!boardId) {
-      print(fail('Board ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(boardId, 'Board ID')) return;
 
     const result = await this.api.getCardsInBoard(boardId);
     print(result);
   }
 
   async getCard(cardId: string): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
 
     const result = await this.api.getCard(cardId);
     print(result);
@@ -46,15 +37,8 @@ export class CardCommands {
     due?: string,
     start?: string
   ): Promise<void> {
-    if (!listId) {
-      print(fail('List ID required', 'MISSING_PARAM'));
-      return;
-    }
-
-    if (!name) {
-      print(fail('Card name required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(listId, 'List ID')) return;
+    if (!requireParam(name, 'Card name')) return;
 
     const result = await this.api.createCard(listId, name, desc, due, start);
     print(result);
@@ -70,80 +54,52 @@ export class CardCommands {
     start?: string,
     dueComplete?: string
   ): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
 
-    const result = await this.api.updateCard(
-      cardId,
+    const result = await this.api.updateCard(cardId, {
       name,
       desc,
       due,
-      undefined,
       labels,
       members,
       start,
-      dueComplete
-    );
+      dueComplete,
+    });
     print(result);
   }
 
   async moveCard(cardId: string, listId: string): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
-
-    if (!listId) {
-      print(fail('List ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
+    if (!requireParam(listId, 'List ID')) return;
 
     const result = await this.api.moveCard(cardId, listId);
     print(result);
   }
 
   async deleteCard(cardId: string): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
 
     const result = await this.api.deleteCard(cardId);
     print(result);
   }
 
   async getComments(cardId: string): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
 
     const result = await this.api.getComments(cardId);
     print(result);
   }
 
   async addComment(cardId: string, text: string): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
-
-    if (!text) {
-      print(fail('Comment text required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
+    if (!requireParam(text, 'Comment text')) return;
 
     const result = await this.api.addComment(cardId, text);
     print(result);
   }
 
   async archiveCard(cardId: string): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
 
     const result = await this.api.archiveCard(cardId);
     print(result);
@@ -154,35 +110,17 @@ export class CardCommands {
     commentId: string,
     text: string
   ): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
-
-    if (!commentId) {
-      print(fail('Comment ID required', 'MISSING_PARAM'));
-      return;
-    }
-
-    if (!text) {
-      print(fail('Comment text required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
+    if (!requireParam(commentId, 'Comment ID')) return;
+    if (!requireParam(text, 'Comment text')) return;
 
     const result = await this.api.updateComment(cardId, commentId, text);
     print(result);
   }
 
   async deleteComment(cardId: string, commentId: string): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
-
-    if (!commentId) {
-      print(fail('Comment ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
+    if (!requireParam(commentId, 'Comment ID')) return;
 
     const result = await this.api.deleteComment(cardId, commentId);
     print(result);
@@ -194,10 +132,7 @@ export class CardCommands {
   }
 
   async getCardHistory(cardId: string, limit?: string): Promise<void> {
-    if (!cardId) {
-      print(fail('Card ID required', 'MISSING_PARAM'));
-      return;
-    }
+    if (!requireParam(cardId, 'Card ID')) return;
 
     const result = await this.api.getCardHistory(cardId, limit);
     print(result);
