@@ -4,9 +4,6 @@ dist/
 *.tsbuildinfo
 .env
 
-# Claude
-/.claude/settings.local.json
-
 # Lefthook
 lefthook-local.yml
 
@@ -19,3 +16,9 @@ lefthook-local.yml
 # Editor
 .vscode/
 .idea/
+
+# Claude Code
+.claude/settings.local.json
+
+TODO.md
+docs/plans/
