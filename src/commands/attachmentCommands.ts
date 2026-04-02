@@ -1,6 +1,11 @@
 import type { TrelloApiService } from '../services/trelloApiService.js';
 import { print } from '../utils/outputFormatter.js';
-import { requireParam } from '../utils/paramValidation.js';
+import {
+  requireParam,
+  validateTrelloId,
+  validateFilePath,
+  validateUrl,
+} from '../utils/paramValidation.js';
 
 export class AttachmentCommands {
   private api: TrelloApiService;
@@ -11,6 +16,7 @@ export class AttachmentCommands {
 
   async getAttachments(cardId: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
 
     const result = await this.api.getAttachments(cardId);
     print(result);
@@ -22,7 +28,9 @@ export class AttachmentCommands {
     name?: string
   ): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
     if (!requireParam(filePath, 'File path')) return;
+    if (!validateFilePath(filePath, 'File path')) return;
 
     const result = await this.api.uploadAttachment(cardId, filePath, name);
     print(result);
@@ -30,7 +38,9 @@ export class AttachmentCommands {
 
   async attachUrl(cardId: string, url: string, name?: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
     if (!requireParam(url, 'URL')) return;
+    if (!validateUrl(url, 'URL')) return;
 
     const result = await this.api.attachUrl(cardId, url, name);
     print(result);
@@ -38,7 +48,9 @@ export class AttachmentCommands {
 
   async deleteAttachment(cardId: string, attachmentId: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
     if (!requireParam(attachmentId, 'Attachment ID')) return;
+    if (!validateTrelloId(attachmentId, 'Attachment ID')) return;
 
     const result = await this.api.deleteAttachment(cardId, attachmentId);
     print(result);

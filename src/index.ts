@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ConfigService } from './services/configService.js';
 import { TrelloApiService } from './services/trelloApiService.js';
+import { CacheService } from './services/cacheService.js';
 import { BoardCommands } from './commands/boardCommands.js';
 import { ListCommands } from './commands/listCommands.js';
 import { CardCommands } from './commands/cardCommands.js';
@@ -15,6 +16,8 @@ import { ChecklistCommands } from './commands/checklistCommands.js';
 import { success, fail } from './models/apiResponse.js';
 import { print } from './utils/outputFormatter.js';
 import { errorMessage } from './utils/errorUtils.js';
+import { setVerbose } from './utils/logger.js';
+import { setJsonMode } from './utils/outputFormatter.js';
 
 function readVersion(): string {
   try {
@@ -61,6 +64,7 @@ Card Commands:
   --create-card <list-id> "<name>" [--desc "<desc>"] [--due "YYYY-MM-DD"] [--start "YYYY-MM-DD"]
   --update-card <card-id> [--name "<name>"] [--desc "<desc>"] [--due "<date>"] [--start "<date>"] [--due-complete] [--labels "<ids>"] [--members "<ids>"]
   --move-card <card-id> <target-list-id>
+  --copy-card <card-id> <target-list-id> [--keep "labels,members,..."]
   --archive-card <card-id>       Archive a card
   --delete-card <card-id>        Permanently delete a card
 
@@ -101,6 +105,9 @@ Checklist Commands:
 Options:
   --help, -h                     Show this help
   --version, -v                  Show version
+  --json                         Output as JSON (default is human-readable text)
+  --no-cache                     Bypass response cache
+  --verbose, --debug             Show HTTP request details on stderr
 `);
 }
 
@@ -117,7 +124,25 @@ function getNamedArg(args: string[], name: string): string | undefined {
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+  const rawArgs = process.argv.slice(2);
+
+  // Parse global flags before command dispatch
+  const isVerbose =
+    rawArgs.includes('--verbose') ||
+    rawArgs.includes('--debug') ||
+    process.env.TRELLO_DEBUG === '1';
+  setVerbose(isVerbose);
+  setJsonMode(rawArgs.includes('--json'));
+
+  const noCache = rawArgs.includes('--no-cache');
+
+  const args = rawArgs.filter(
+    (a) =>
+      a !== '--verbose' &&
+      a !== '--debug' &&
+      a !== '--json' &&
+      a !== '--no-cache'
+  );
   const config = new ConfigService();
 
   // Check for help/version first
@@ -171,7 +196,9 @@ async function main(): Promise<void> {
     }
   }
 
-  const api = new TrelloApiService(config);
+  const cache = new CacheService();
+  if (noCache) cache.setEnabled(false);
+  const api = new TrelloApiService(config, cache);
   const boardCmd = new BoardCommands(api);
   const listCmd = new ListCommands(api);
   const cardCmd = new CardCommands(api);
@@ -284,6 +311,12 @@ async function executeCommand(ctx: CommandContext): Promise<void> {
         args.includes('--due-complete') ? 'true' : undefined
       ),
     '--move-card': () => cardCmd.moveCard(getArg(args, 1), getArg(args, 2)),
+    '--copy-card': () =>
+      cardCmd.copyCard(
+        getArg(args, 1),
+        getArg(args, 2),
+        getNamedArg(args, '--keep')
+      ),
     '--archive-card': () => cardCmd.archiveCard(getArg(args, 1)),
     '--delete-card': () => cardCmd.deleteCard(getArg(args, 1)),
 

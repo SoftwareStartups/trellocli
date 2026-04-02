@@ -1,6 +1,10 @@
 import type { TrelloApiService } from '../services/trelloApiService.js';
 import { print } from '../utils/outputFormatter.js';
-import { requireParam } from '../utils/paramValidation.js';
+import {
+  requireParam,
+  validateDate,
+  validateTrelloId,
+} from '../utils/paramValidation.js';
 
 export class CardCommands {
   private api: TrelloApiService;
@@ -11,6 +15,7 @@ export class CardCommands {
 
   async getCards(listId: string): Promise<void> {
     if (!requireParam(listId, 'List ID')) return;
+    if (!validateTrelloId(listId, 'List ID')) return;
 
     const result = await this.api.getCardsInList(listId);
     print(result);
@@ -18,6 +23,7 @@ export class CardCommands {
 
   async getAllCards(boardId: string): Promise<void> {
     if (!requireParam(boardId, 'Board ID')) return;
+    if (!validateTrelloId(boardId, 'Board ID')) return;
 
     const result = await this.api.getCardsInBoard(boardId);
     print(result);
@@ -25,6 +31,7 @@ export class CardCommands {
 
   async getCard(cardId: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
 
     const result = await this.api.getCard(cardId);
     print(result);
@@ -38,7 +45,10 @@ export class CardCommands {
     start?: string
   ): Promise<void> {
     if (!requireParam(listId, 'List ID')) return;
+    if (!validateTrelloId(listId, 'List ID')) return;
     if (!requireParam(name, 'Card name')) return;
+    if (due && !validateDate(due, 'Due date')) return;
+    if (start && !validateDate(start, 'Start date')) return;
 
     const result = await this.api.createCard(listId, name, desc, due, start);
     print(result);
@@ -55,6 +65,9 @@ export class CardCommands {
     dueComplete?: string
   ): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
+    if (due && !validateDate(due, 'Due date')) return;
+    if (start && !validateDate(start, 'Start date')) return;
 
     const result = await this.api.updateCard(cardId, {
       name,
@@ -70,7 +83,9 @@ export class CardCommands {
 
   async moveCard(cardId: string, listId: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
     if (!requireParam(listId, 'List ID')) return;
+    if (!validateTrelloId(listId, 'List ID')) return;
 
     const result = await this.api.moveCard(cardId, listId);
     print(result);
@@ -78,6 +93,7 @@ export class CardCommands {
 
   async deleteCard(cardId: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
 
     const result = await this.api.deleteCard(cardId);
     print(result);
@@ -85,6 +101,7 @@ export class CardCommands {
 
   async getComments(cardId: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
 
     const result = await this.api.getComments(cardId);
     print(result);
@@ -92,6 +109,7 @@ export class CardCommands {
 
   async addComment(cardId: string, text: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
     if (!requireParam(text, 'Comment text')) return;
 
     const result = await this.api.addComment(cardId, text);
@@ -100,6 +118,7 @@ export class CardCommands {
 
   async archiveCard(cardId: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
 
     const result = await this.api.archiveCard(cardId);
     print(result);
@@ -111,6 +130,7 @@ export class CardCommands {
     text: string
   ): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
     if (!requireParam(commentId, 'Comment ID')) return;
     if (!requireParam(text, 'Comment text')) return;
 
@@ -120,9 +140,24 @@ export class CardCommands {
 
   async deleteComment(cardId: string, commentId: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
     if (!requireParam(commentId, 'Comment ID')) return;
 
     const result = await this.api.deleteComment(cardId, commentId);
+    print(result);
+  }
+
+  async copyCard(
+    cardId: string,
+    targetListId: string,
+    keep?: string
+  ): Promise<void> {
+    if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
+    if (!requireParam(targetListId, 'Target list ID')) return;
+    if (!validateTrelloId(targetListId, 'Target list ID')) return;
+
+    const result = await this.api.copyCard(cardId, targetListId, keep || 'all');
     print(result);
   }
 
@@ -133,6 +168,7 @@ export class CardCommands {
 
   async getCardHistory(cardId: string, limit?: string): Promise<void> {
     if (!requireParam(cardId, 'Card ID')) return;
+    if (!validateTrelloId(cardId, 'Card ID')) return;
 
     const result = await this.api.getCardHistory(cardId, limit);
     print(result);

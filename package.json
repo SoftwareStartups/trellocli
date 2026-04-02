@@ -19,6 +19,7 @@
     "format:check": "bunx biome format .",
     "lint": "bunx biome lint .",
     "typecheck": "tsc --noEmit -p tsconfig.check.json",
+    "test": "bun test",
     "postinstall": "lefthook install"
   },
   "repository": {

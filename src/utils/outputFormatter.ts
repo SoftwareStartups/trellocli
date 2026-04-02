@@ -1,4 +1,11 @@
 import type { ApiResponse } from '../models/apiResponse.js';
+import { formatText } from './textFormatter.js';
+
+let jsonMode = false;
+
+export function setJsonMode(enabled: boolean): void {
+  jsonMode = enabled;
+}
 
 function stripNulls(obj: object): Record<string, unknown> {
   return Object.fromEntries(
@@ -6,9 +13,13 @@ function stripNulls(obj: object): Record<string, unknown> {
   );
 }
 
-/**
- * Print API response as compact JSON (matching C# OutputFormatter behavior)
- */
 export function print<T>(response: ApiResponse<T>): void {
-  console.log(JSON.stringify(stripNulls(response)));
+  if (!response.ok && !process.env.__TRELLO_CLI_TEST) {
+    process.exitCode = 1;
+  }
+  if (jsonMode) {
+    console.log(JSON.stringify(stripNulls(response)));
+  } else {
+    console.log(formatText(response));
+  }
 }

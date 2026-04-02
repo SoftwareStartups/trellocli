@@ -1,6 +1,6 @@
 import type { TrelloApiService } from '../services/trelloApiService.js';
 import { print } from '../utils/outputFormatter.js';
-import { requireParam } from '../utils/paramValidation.js';
+import { requireParam, validateTrelloId } from '../utils/paramValidation.js';
 
 export class BoardCommands {
   private api: TrelloApiService;
@@ -16,6 +16,7 @@ export class BoardCommands {
 
   async getBoard(boardId: string): Promise<void> {
     if (!requireParam(boardId, 'Board ID')) return;
+    if (!validateTrelloId(boardId, 'Board ID')) return;
 
     const result = await this.api.getBoard(boardId);
     print(result);
@@ -34,6 +35,7 @@ export class BoardCommands {
 
   async getBoardActivity(boardId: string, limit?: string): Promise<void> {
     if (!requireParam(boardId, 'Board ID')) return;
+    if (!validateTrelloId(boardId, 'Board ID')) return;
 
     const result = await this.api.getBoardActivity(boardId, limit);
     print(result);

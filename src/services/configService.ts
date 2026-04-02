@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import * as crypto from 'node:crypto';
 import { errorMessage } from '../utils/errorUtils.js';
 
 interface ConfigData {
@@ -8,14 +9,60 @@ interface ConfigData {
   token?: string;
 }
 
-const CONFIG_DIR = path.join(os.homedir(), '.trello-cli');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+interface EncryptedConfig {
+  encrypted: true;
+  data: string; // base64
+  iv: string; // base64
+  salt: string; // base64
+}
+
+const DEFAULT_CONFIG_DIR = path.join(os.homedir(), '.trello-cli');
+const ALGORITHM = 'aes-256-gcm';
+const KEY_LENGTH = 32;
+
+function deriveKey(salt: Buffer): Buffer {
+  const machineSecret = `${os.hostname()}:${os.userInfo().uid}:trello-cli`;
+  return crypto.scryptSync(machineSecret, salt, KEY_LENGTH);
+}
+
+function encrypt(plaintext: string): EncryptedConfig {
+  const salt = crypto.randomBytes(16);
+  const key = deriveKey(salt);
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  let encrypted = cipher.update(plaintext, 'utf8', 'base64');
+  encrypted += cipher.final('base64');
+  const authTag = cipher.getAuthTag();
+  return {
+    encrypted: true,
+    data: `${encrypted}:${authTag.toString('base64')}`,
+    iv: iv.toString('base64'),
+    salt: salt.toString('base64'),
+  };
+}
+
+function decrypt(config: EncryptedConfig): string {
+  const salt = Buffer.from(config.salt, 'base64');
+  const key = deriveKey(salt);
+  const iv = Buffer.from(config.iv, 'base64');
+  const [encData, authTagB64] = config.data.split(':');
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(Buffer.from(authTagB64, 'base64'));
+  let decrypted = decipher.update(encData, 'base64', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
 
 export class ConfigService {
   public apiKey: string | undefined;
   public token: string | undefined;
+  private configDir: string;
+  private configFile: string;
 
-  constructor() {
+  constructor(configDir?: string) {
+    this.configDir = configDir ?? DEFAULT_CONFIG_DIR;
+    this.configFile = path.join(this.configDir, 'config.json');
+
     // Priority: Environment variables > Config file
     this.apiKey = process.env.TRELLO_API_KEY;
     this.token = process.env.TRELLO_TOKEN;
@@ -31,17 +78,26 @@ export class ConfigService {
   }
 
   private loadFromFile(): void {
-    if (!fs.existsSync(CONFIG_FILE)) return;
+    if (!fs.existsSync(this.configFile)) return;
 
     try {
-      const json = fs.readFileSync(CONFIG_FILE, 'utf-8');
-      const config: ConfigData = JSON.parse(json);
+      const json = fs.readFileSync(this.configFile, 'utf-8');
+      const raw = JSON.parse(json);
+
+      let config: ConfigData;
+      if (raw.encrypted) {
+        const decrypted = decrypt(raw as EncryptedConfig);
+        config = JSON.parse(decrypted);
+      } else {
+        config = raw as ConfigData;
+      }
+
       if (config) {
         this.apiKey = this.apiKey ?? config.apiKey;
         this.token = this.token ?? config.token;
       }
     } catch {
-      // Ignore file read errors
+      // Ignore file read/decrypt errors (machine changed, corrupt file)
     }
   }
 
@@ -57,12 +113,15 @@ export class ConfigService {
         return { success: false, error: 'Token cannot be empty' };
       }
 
-      if (!fs.existsSync(CONFIG_DIR)) {
-        fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+      if (!fs.existsSync(this.configDir)) {
+        fs.mkdirSync(this.configDir, { recursive: true, mode: 0o700 });
       }
 
       const config: ConfigData = { apiKey, token };
-      fs.writeFileSync(CONFIG_FILE, JSON.stringify(config), { mode: 0o600 });
+      const encrypted = encrypt(JSON.stringify(config));
+      fs.writeFileSync(this.configFile, JSON.stringify(encrypted), {
+        mode: 0o600,
+      });
 
       return { success: true };
     } catch (ex) {
@@ -72,8 +131,8 @@ export class ConfigService {
 
   clearAuth(): { success: boolean; error?: string } {
     try {
-      if (fs.existsSync(CONFIG_FILE)) {
-        fs.unlinkSync(CONFIG_FILE);
+      if (fs.existsSync(this.configFile)) {
+        fs.unlinkSync(this.configFile);
       }
       return { success: true };
     } catch (ex) {

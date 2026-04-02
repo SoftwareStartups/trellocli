@@ -34,9 +34,16 @@ tasks:
     cmds:
       - bun run typecheck
 
+  test:
+    desc: Run tests
+    cmds:
+      - bun test
+
   check:
-    desc: Run lint and typecheck
+    desc: Run lint, typecheck, and tests
     deps: [lint, typecheck]
+    cmds:
+      - task: test
 
   compile:
     desc: Compile to standalone binary

@@ -1,6 +1,6 @@
 import type { TrelloApiService } from '../services/trelloApiService.js';
 import { print } from '../utils/outputFormatter.js';
-import { requireParam } from '../utils/paramValidation.js';
+import { requireParam, validateColor } from '../utils/paramValidation.js';
 
 export class LabelCommands {
   private api: TrelloApiService;
@@ -24,6 +24,7 @@ export class LabelCommands {
     if (!requireParam(boardId, 'Board ID')) return;
     if (!requireParam(name, 'Label name')) return;
     if (!requireParam(color, 'Label color')) return;
+    if (!validateColor(color, 'Label color')) return;
 
     const result = await this.api.createLabel(boardId, name, color);
     print(result);
@@ -35,6 +36,7 @@ export class LabelCommands {
     color?: string
   ): Promise<void> {
     if (!requireParam(labelId, 'Label ID')) return;
+    if (color && !validateColor(color, 'Label color')) return;
 
     const result = await this.api.updateLabel(labelId, name, color);
     print(result);
