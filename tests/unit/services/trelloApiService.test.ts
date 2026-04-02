@@ -1,15 +1,15 @@
 import {
-  describe,
-  test,
-  expect,
-  beforeEach,
   afterEach,
+  beforeEach,
+  describe,
+  expect,
   type mock,
+  test,
 } from 'bun:test';
 import { TrelloApiService } from '../../../src/services/trelloApiService.js';
 import {
-  mockFetchResponse,
   mockFetchError,
+  mockFetchResponse,
   restoreFetch,
 } from '../../helpers/mockFetch.js';
 import { makeConfig } from '../../helpers/testUtils.js';
@@ -405,6 +405,231 @@ describe('TrelloApiService', () => {
       const url = getLastFetchUrl();
       expect(url).toContain('key=test-key');
       expect(url).toContain('token=test-token');
+    });
+  });
+
+  // -- Field filtering --
+  describe('field filtering', () => {
+    test('strips extra fields from single objects', async () => {
+      mockFetchResponse({
+        body: {
+          id: 'b1',
+          name: 'Board',
+          desc: '',
+          url: 'http://b',
+          closed: false,
+          starred: true,
+          prefs: { background: 'blue' },
+          memberships: [{ id: 'm1' }],
+          dateLastActivity: '2025-01-01',
+          labelNames: { green: '' },
+        },
+      });
+      const result = await api.getBoard('b1');
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual({
+        id: 'b1',
+        name: 'Board',
+        desc: '',
+        url: 'http://b',
+        closed: false,
+      });
+    });
+
+    test('strips extra fields from arrays', async () => {
+      mockFetchResponse({
+        body: [
+          {
+            id: 'b1',
+            name: 'A',
+            url: 'http://a',
+            starred: true,
+            prefs: {},
+          },
+          {
+            id: 'b2',
+            name: 'B',
+            url: 'http://b',
+            dateLastView: '2025-01-01',
+          },
+        ],
+      });
+      const result = await api.getBoards();
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual([
+        { id: 'b1', name: 'A', url: 'http://a' },
+        { id: 'b2', name: 'B', url: 'http://b' },
+      ]);
+    });
+
+    test('strips nested comment data and memberCreator', async () => {
+      mockFetchResponse({
+        body: [
+          {
+            id: 'a1',
+            type: 'commentCard',
+            date: '2025-01-01',
+            data: {
+              text: 'hello',
+              textData: { emoji: {} },
+              board: { id: 'b1', name: 'B', shortLink: 'x' },
+              card: { id: 'c1', name: 'C', shortLink: 'y', idShort: 1 },
+              list: { id: 'l1', name: 'L' },
+            },
+            memberCreator: {
+              id: 'm1',
+              fullName: 'Alice',
+              username: 'alice',
+              avatarHash: 'abc',
+              initials: 'A',
+            },
+            limits: {},
+            display: { translationKey: 'x' },
+          },
+        ],
+      });
+      const result = await api.getComments('c1');
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual([
+        {
+          id: 'a1',
+          date: '2025-01-01',
+          data: { text: 'hello' },
+          memberCreator: { id: 'm1', fullName: 'Alice', username: 'alice' },
+        },
+      ]);
+    });
+
+    test('strips extra fields from write responses', async () => {
+      mockFetchResponse({
+        body: {
+          id: 'b2',
+          name: 'New',
+          url: 'http://new',
+          starred: false,
+          prefs: { background: 'green' },
+          shortLink: 'abc',
+        },
+      });
+      const result = await api.createBoard('New');
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual({
+        id: 'b2',
+        name: 'New',
+        url: 'http://new',
+      });
+    });
+
+    test('sends fields param in board GET URL', async () => {
+      mockFetchResponse({ body: [] });
+      await api.getBoards();
+      const url = getLastFetchUrl();
+      expect(url).toContain('fields=id,name,desc,url,closed');
+    });
+
+    test('sends memberCreator_fields in comment GET URL', async () => {
+      mockFetchResponse({ body: [] });
+      await api.getComments('c1');
+      const url = getLastFetchUrl();
+      expect(url).toContain('memberCreator_fields=id,fullName,username');
+    });
+
+    test('strips checklist checkItems to defined fields', async () => {
+      mockFetchResponse({
+        body: [
+          {
+            id: 'cl1',
+            name: 'Checklist',
+            idBoard: 'b1',
+            idCard: 'c1',
+            pos: 16384,
+            checkItems: [
+              {
+                id: 'ci1',
+                name: 'Item 1',
+                state: 'complete',
+                idChecklist: 'cl1',
+                pos: 1,
+                nameData: { emoji: {} },
+                due: null,
+                idMember: null,
+              },
+            ],
+          },
+        ],
+      });
+      const result = await api.getChecklists('c1');
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual([
+        {
+          id: 'cl1',
+          name: 'Checklist',
+          idBoard: 'b1',
+          idCard: 'c1',
+          checkItems: [
+            {
+              id: 'ci1',
+              name: 'Item 1',
+              state: 'complete',
+              idChecklist: 'cl1',
+              pos: 1,
+            },
+          ],
+        },
+      ]);
+    });
+
+    test('strips action memberCreator extra fields', async () => {
+      mockFetchResponse({
+        body: [
+          {
+            id: 'act1',
+            type: 'updateCard',
+            date: '2025-01-01',
+            data: { listBefore: { id: 'l1' }, listAfter: { id: 'l2' } },
+            memberCreator: {
+              id: 'm1',
+              fullName: 'Bob',
+              username: 'bob',
+              avatarHash: 'xyz',
+              initials: 'B',
+              activityBlocked: false,
+            },
+            limits: {},
+          },
+        ],
+      });
+      const result = await api.getBoardActivity('b1');
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual([
+        {
+          id: 'act1',
+          type: 'updateCard',
+          date: '2025-01-01',
+          data: { listBefore: { id: 'l1' }, listAfter: { id: 'l2' } },
+          memberCreator: { id: 'm1', fullName: 'Bob', username: 'bob' },
+        },
+      ]);
+    });
+
+    test('strips checkAuth extra fields', async () => {
+      mockFetchResponse({
+        body: {
+          id: 'm1',
+          fullName: 'Test',
+          username: 'test',
+          avatarHash: 'abc',
+          initials: 'T',
+          email: 'test@example.com',
+        },
+      });
+      const result = await api.checkAuth();
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual({
+        id: 'm1',
+        fullName: 'Test',
+        username: 'test',
+      });
     });
   });
 });

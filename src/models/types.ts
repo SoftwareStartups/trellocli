@@ -1,3 +1,60 @@
+// Runtime field lists — single source of truth for API field filtering
+export const BOARD_FIELDS = ['id', 'name', 'desc', 'url', 'closed'] as const;
+export const LIST_FIELDS = ['id', 'name', 'idBoard', 'closed', 'pos'] as const;
+export const CARD_FIELDS = [
+  'id',
+  'name',
+  'desc',
+  'idList',
+  'idBoard',
+  'due',
+  'dueComplete',
+  'start',
+  'url',
+  'labels',
+  'idMembers',
+] as const;
+export const LABEL_FIELDS = ['id', 'name', 'color', 'idBoard'] as const;
+export const COMMENT_FIELDS = ['id', 'date', 'data', 'memberCreator'] as const;
+export const ACTION_FIELDS = [
+  'id',
+  'type',
+  'date',
+  'data',
+  'memberCreator',
+] as const;
+export const ATTACHMENT_FIELDS = [
+  'id',
+  'name',
+  'url',
+  'bytes',
+  'date',
+  'mimeType',
+  'isUpload',
+] as const;
+export const MEMBER_FIELDS = ['id', 'fullName', 'username'] as const;
+export const WORKSPACE_FIELDS = [
+  'id',
+  'name',
+  'displayName',
+  'desc',
+  'url',
+] as const;
+export const CHECKLIST_FIELDS = [
+  'id',
+  'name',
+  'idBoard',
+  'idCard',
+  'checkItems',
+] as const;
+export const CHECKITEM_FIELDS = [
+  'id',
+  'name',
+  'state',
+  'idChecklist',
+  'pos',
+] as const;
+
 export interface Board {
   id: string;
   name: string;

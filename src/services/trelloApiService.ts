@@ -1,23 +1,36 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { ConfigService } from './configService.js';
-import { type ApiResponse, success, fail } from '../models/apiResponse.js';
+import { type ApiResponse, fail, success } from '../models/apiResponse.js';
+import type {
+  Attachment,
+  Board,
+  Card,
+  CardAction,
+  CheckItem,
+  Checklist,
+  Comment,
+  Label,
+  Member,
+  TrelloList,
+  Workspace,
+} from '../models/types.js';
+import {
+  ACTION_FIELDS,
+  ATTACHMENT_FIELDS,
+  BOARD_FIELDS,
+  CARD_FIELDS,
+  CHECKITEM_FIELDS,
+  CHECKLIST_FIELDS,
+  COMMENT_FIELDS,
+  LABEL_FIELDS,
+  LIST_FIELDS,
+  MEMBER_FIELDS,
+  WORKSPACE_FIELDS,
+} from '../models/types.js';
 import { errorMessage } from '../utils/errorUtils.js';
 import { fetchWithResilience } from '../utils/httpClient.js';
 import type { CacheService } from './cacheService.js';
-import type {
-  Board,
-  TrelloList,
-  Card,
-  Comment,
-  CardAction,
-  Attachment,
-  Member,
-  Label,
-  Workspace,
-  Checklist,
-  CheckItem,
-} from '../models/types.js';
+import type { ConfigService } from './configService.js';
 
 export interface UpdateCardOptions {
   name?: string;
@@ -46,6 +59,57 @@ function isEmptyForm(form: URLSearchParams): boolean {
   return form.toString() === '';
 }
 
+/** Strip an object or array of objects to only the listed fields. */
+function pickFields(data: unknown, fields: readonly string[]): unknown {
+  if (Array.isArray(data)) {
+    return data.map((item) => pickFields(item, fields));
+  }
+  if (typeof data !== 'object' || data === null) return data;
+  const source = data as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const f of fields) {
+    if (f in source) result[f] = source[f];
+  }
+  return result;
+}
+
+function transformComment(data: unknown): unknown {
+  const strip = (c: Record<string, unknown>) => ({
+    ...c,
+    data:
+      c.data && typeof c.data === 'object'
+        ? { text: (c.data as Record<string, unknown>).text }
+        : c.data,
+    memberCreator: c.memberCreator
+      ? pickFields(c.memberCreator, MEMBER_FIELDS)
+      : c.memberCreator,
+  });
+  if (Array.isArray(data)) return data.map(strip);
+  return strip(data as Record<string, unknown>);
+}
+
+function transformAction(data: unknown): unknown {
+  const strip = (a: Record<string, unknown>) => ({
+    ...a,
+    memberCreator: a.memberCreator
+      ? pickFields(a.memberCreator, MEMBER_FIELDS)
+      : a.memberCreator,
+  });
+  if (Array.isArray(data)) return data.map(strip);
+  return strip(data as Record<string, unknown>);
+}
+
+function transformChecklist(data: unknown): unknown {
+  const strip = (cl: Record<string, unknown>) => ({
+    ...cl,
+    checkItems: Array.isArray(cl.checkItems)
+      ? pickFields(cl.checkItems, CHECKITEM_FIELDS)
+      : cl.checkItems,
+  });
+  if (Array.isArray(data)) return data.map(strip);
+  return strip(data as Record<string, unknown>);
+}
+
 // Cache TTLs in milliseconds
 const TTL_LONG = 5 * 60 * 1000; // 5 min: boards, lists, labels, members, workspaces
 const TTL_MED = 2 * 60 * 1000; // 2 min: cards, checklists
@@ -66,6 +130,8 @@ export class TrelloApiService {
     options?: {
       extraParams?: string;
       notFoundMessage?: string;
+      pick?: readonly string[];
+      transform?: (data: unknown) => unknown;
     }
   ): Promise<ApiResponse<T>> {
     const cacheKey = `${endpoint}?${options?.extraParams ?? ''}`;
@@ -102,6 +168,8 @@ export class TrelloApiService {
       extraParams?: string;
       notFoundMessage?: string;
       successValue?: T;
+      pick?: readonly string[];
+      transform?: (data: unknown) => unknown;
     }
   ): Promise<ApiResponse<T>> {
     try {
@@ -123,7 +191,9 @@ export class TrelloApiService {
       if (!response.ok) return fail(`HTTP ${response.status}`, 'HTTP_ERROR');
       if (options?.successValue !== undefined)
         return success(options.successValue);
-      const data = (await response.json()) as T;
+      let data = (await response.json()) as T;
+      if (options?.pick) data = pickFields(data, options.pick) as T;
+      if (options?.transform) data = options.transform(data) as T;
       return success(data);
     } catch (ex) {
       return fail(errorMessage(ex), 'HTTP_ERROR');
@@ -133,12 +203,12 @@ export class TrelloApiService {
   // Auth check (special error handling — AUTH_ERROR instead of HTTP_ERROR)
   async checkAuth(): Promise<ApiResponse<Member>> {
     try {
-      const url = this.buildUrl('/members/me');
+      const url = this.buildUrl('/members/me', 'fields=id,fullName,username');
       const response = await fetchWithResilience(url);
       if (!response.ok) {
         return fail('Invalid credentials', 'AUTH_ERROR');
       }
-      const member = (await response.json()) as Member;
+      const member = pickFields(await response.json(), MEMBER_FIELDS) as Member;
       return success(member);
     } catch (ex) {
       return fail(errorMessage(ex), 'HTTP_ERROR');
@@ -148,13 +218,16 @@ export class TrelloApiService {
   // Board operations
   async getBoards(): Promise<ApiResponse<Board[]>> {
     return this.cachedRequest<Board[]>('/members/me/boards', TTL_LONG, {
-      extraParams: 'filter=open',
+      extraParams: 'filter=open&fields=id,name,desc,url,closed',
+      pick: BOARD_FIELDS,
     });
   }
 
   async getBoard(boardId: string): Promise<ApiResponse<Board>> {
     return this.cachedRequest<Board>(`/boards/${boardId}`, TTL_LONG, {
+      extraParams: 'fields=id,name,desc,url,closed',
       notFoundMessage: 'Board not found',
+      pick: BOARD_FIELDS,
     });
   }
 
@@ -167,6 +240,7 @@ export class TrelloApiService {
     return this.request<Board>('/boards', {
       method: 'POST',
       body: buildForm({ name, desc, idOrganization: workspaceId }),
+      pick: BOARD_FIELDS,
     });
   }
 
@@ -178,8 +252,10 @@ export class TrelloApiService {
       `/boards/${boardId}/actions`,
       TTL_SHORT,
       {
-        extraParams: limit ? `limit=${limit}` : undefined,
+        extraParams: `memberCreator_fields=id,fullName,username${limit ? `&limit=${limit}` : ''}`,
         notFoundMessage: 'Board not found',
+        pick: ACTION_FIELDS,
+        transform: transformAction,
       }
     );
   }
@@ -190,8 +266,9 @@ export class TrelloApiService {
       `/boards/${boardId}/lists`,
       TTL_LONG,
       {
-        extraParams: 'filter=open',
+        extraParams: 'filter=open&fields=id,name,idBoard,closed,pos',
         notFoundMessage: 'Board not found',
+        pick: LIST_FIELDS,
       }
     );
   }
@@ -204,6 +281,7 @@ export class TrelloApiService {
     return this.request<TrelloList>('/lists', {
       method: 'POST',
       extraParams: `name=${encodeURIComponent(name)}&idBoard=${boardId}`,
+      pick: LIST_FIELDS,
     });
   }
 
@@ -213,26 +291,35 @@ export class TrelloApiService {
       method: 'PUT',
       body: buildForm({ value: 'true' }),
       notFoundMessage: 'List not found',
+      pick: LIST_FIELDS,
     });
   }
 
   // Card operations
   async getCardsInList(listId: string): Promise<ApiResponse<Card[]>> {
     return this.cachedRequest<Card[]>(`/lists/${listId}/cards`, TTL_MED, {
+      extraParams:
+        'fields=id,name,desc,idList,idBoard,due,dueComplete,start,url,idMembers,labels',
       notFoundMessage: 'List not found',
+      pick: CARD_FIELDS,
     });
   }
 
   async getCardsInBoard(boardId: string): Promise<ApiResponse<Card[]>> {
     return this.cachedRequest<Card[]>(`/boards/${boardId}/cards`, TTL_MED, {
-      extraParams: 'filter=open',
+      extraParams:
+        'filter=open&fields=id,name,desc,idList,idBoard,due,dueComplete,start,url,idMembers,labels',
       notFoundMessage: 'Board not found',
+      pick: CARD_FIELDS,
     });
   }
 
   async getCard(cardId: string): Promise<ApiResponse<Card>> {
     return this.cachedRequest<Card>(`/cards/${cardId}`, TTL_MED, {
+      extraParams:
+        'fields=id,name,desc,idList,idBoard,due,dueComplete,start,url,idMembers,labels',
       notFoundMessage: 'Card not found',
+      pick: CARD_FIELDS,
     });
   }
 
@@ -247,6 +334,7 @@ export class TrelloApiService {
     return this.request<Card>('/cards', {
       method: 'POST',
       body: buildForm({ idList: listId, name, desc, due, start }),
+      pick: CARD_FIELDS,
     });
   }
 
@@ -274,6 +362,7 @@ export class TrelloApiService {
       method: 'PUT',
       body: formData,
       notFoundMessage: 'Card not found',
+      pick: CARD_FIELDS,
     });
   }
 
@@ -287,6 +376,7 @@ export class TrelloApiService {
       method: 'PUT',
       body: buildForm({ closed: 'true' }),
       notFoundMessage: 'Card not found',
+      pick: CARD_FIELDS,
     });
   }
 
@@ -305,8 +395,11 @@ export class TrelloApiService {
       `/cards/${cardId}/actions`,
       TTL_SHORT,
       {
-        extraParams: 'filter=commentCard',
+        extraParams:
+          'filter=commentCard&memberCreator_fields=id,fullName,username',
         notFoundMessage: 'Card not found',
+        pick: COMMENT_FIELDS,
+        transform: transformComment,
       }
     );
   }
@@ -320,6 +413,8 @@ export class TrelloApiService {
       method: 'POST',
       extraParams: `text=${encodeURIComponent(text)}`,
       notFoundMessage: 'Card not found',
+      pick: COMMENT_FIELDS,
+      transform: transformComment,
     });
   }
 
@@ -335,6 +430,8 @@ export class TrelloApiService {
         method: 'PUT',
         extraParams: `text=${encodeURIComponent(text)}`,
         notFoundMessage: 'Card or comment not found',
+        pick: COMMENT_FIELDS,
+        transform: transformComment,
       }
     );
   }
@@ -356,7 +453,11 @@ export class TrelloApiService {
     return this.cachedRequest<Attachment[]>(
       `/cards/${cardId}/attachments`,
       TTL_MED,
-      { notFoundMessage: 'Card not found' }
+      {
+        extraParams: 'fields=id,name,url,bytes,date,mimeType,isUpload',
+        notFoundMessage: 'Card not found',
+        pick: ATTACHMENT_FIELDS,
+      }
     );
   }
 
@@ -385,6 +486,7 @@ export class TrelloApiService {
       method: 'POST',
       body: formData,
       notFoundMessage: 'Card not found',
+      pick: ATTACHMENT_FIELDS,
     });
   }
 
@@ -398,6 +500,7 @@ export class TrelloApiService {
       method: 'POST',
       body: buildForm({ url: attachUrl, name }),
       notFoundMessage: 'Card not found',
+      pick: ATTACHMENT_FIELDS,
     });
   }
 
@@ -427,13 +530,16 @@ export class TrelloApiService {
         idCardSource: cardId,
         keepFromSource,
       }),
+      pick: CARD_FIELDS,
     });
   }
 
   // My cards
   async getMyCards(): Promise<ApiResponse<Card[]>> {
     return this.cachedRequest<Card[]>('/members/me/cards', TTL_MED, {
-      extraParams: 'filter=open',
+      extraParams:
+        'filter=open&fields=id,name,desc,idList,idBoard,due,dueComplete,start,url,idMembers,labels',
+      pick: CARD_FIELDS,
     });
   }
 
@@ -446,8 +552,10 @@ export class TrelloApiService {
       `/cards/${cardId}/actions`,
       TTL_SHORT,
       {
-        extraParams: limit ? `limit=${limit}` : undefined,
+        extraParams: `memberCreator_fields=id,fullName,username${limit ? `&limit=${limit}` : ''}`,
         notFoundMessage: 'Card not found',
+        pick: ACTION_FIELDS,
+        transform: transformAction,
       }
     );
   }
@@ -455,7 +563,9 @@ export class TrelloApiService {
   // Label operations
   async getBoardLabels(boardId: string): Promise<ApiResponse<Label[]>> {
     return this.cachedRequest<Label[]>(`/boards/${boardId}/labels`, TTL_LONG, {
+      extraParams: 'fields=id,name,color,idBoard',
       notFoundMessage: 'Board not found',
+      pick: LABEL_FIELDS,
     });
   }
 
@@ -468,6 +578,7 @@ export class TrelloApiService {
     return this.request<Label>('/labels', {
       method: 'POST',
       body: buildForm({ name, color, idBoard: boardId }),
+      pick: LABEL_FIELDS,
     });
   }
 
@@ -487,6 +598,7 @@ export class TrelloApiService {
       method: 'PUT',
       body: formData,
       notFoundMessage: 'Label not found',
+      pick: LABEL_FIELDS,
     });
   }
 
@@ -506,7 +618,11 @@ export class TrelloApiService {
     return this.cachedRequest<Member[]>(
       `/boards/${boardId}/members`,
       TTL_LONG,
-      { notFoundMessage: 'Board not found' }
+      {
+        extraParams: 'fields=id,fullName,username',
+        notFoundMessage: 'Board not found',
+        pick: MEMBER_FIELDS,
+      }
     );
   }
 
@@ -519,6 +635,7 @@ export class TrelloApiService {
       method: 'POST',
       extraParams: `value=${memberId}`,
       notFoundMessage: 'Card not found',
+      pick: MEMBER_FIELDS,
     });
   }
 
@@ -538,7 +655,11 @@ export class TrelloApiService {
   async getWorkspaces(): Promise<ApiResponse<Workspace[]>> {
     return this.cachedRequest<Workspace[]>(
       '/members/me/organizations',
-      TTL_LONG
+      TTL_LONG,
+      {
+        extraParams: 'fields=id,name,displayName,desc,url',
+        pick: WORKSPACE_FIELDS,
+      }
     );
   }
 
@@ -547,8 +668,9 @@ export class TrelloApiService {
       `/organizations/${workspaceId}/boards`,
       TTL_LONG,
       {
-        extraParams: 'filter=open',
+        extraParams: 'filter=open&fields=id,name,desc,url,closed',
         notFoundMessage: 'Workspace not found',
+        pick: BOARD_FIELDS,
       }
     );
   }
@@ -558,7 +680,13 @@ export class TrelloApiService {
     return this.cachedRequest<Checklist[]>(
       `/cards/${cardId}/checklists`,
       TTL_MED,
-      { notFoundMessage: 'Card not found' }
+      {
+        extraParams:
+          'fields=id,name,idBoard,idCard&checkItem_fields=id,name,state,idChecklist,pos',
+        notFoundMessage: 'Card not found',
+        pick: CHECKLIST_FIELDS,
+        transform: transformChecklist,
+      }
     );
   }
 
@@ -570,6 +698,8 @@ export class TrelloApiService {
     return this.request<Checklist>('/checklists', {
       method: 'POST',
       body: buildForm({ idCard: cardId, name }),
+      pick: CHECKLIST_FIELDS,
+      transform: transformChecklist,
     });
   }
 
@@ -582,6 +712,7 @@ export class TrelloApiService {
       method: 'POST',
       extraParams: `name=${encodeURIComponent(name)}`,
       notFoundMessage: 'Checklist not found',
+      pick: CHECKITEM_FIELDS,
     });
   }
 
@@ -604,6 +735,7 @@ export class TrelloApiService {
         method: 'PUT',
         body: formData,
         notFoundMessage: 'Card or check item not found',
+        pick: CHECKITEM_FIELDS,
       }
     );
   }
