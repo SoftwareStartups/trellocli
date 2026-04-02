@@ -29,7 +29,7 @@ export class CacheService {
 
   invalidate(pattern: string): void {
     for (const key of this.store.keys()) {
-      if (key.includes(pattern)) {
+      if (key.startsWith(pattern)) {
         this.store.delete(key);
       }
     }

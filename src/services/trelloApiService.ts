@@ -42,6 +42,10 @@ function buildForm(
   return form;
 }
 
+function isEmptyForm(form: URLSearchParams): boolean {
+  return form.toString() === '';
+}
+
 // Cache TTLs in milliseconds
 const TTL_LONG = 5 * 60 * 1000; // 5 min: boards, lists, labels, members, workspaces
 const TTL_MED = 2 * 60 * 1000; // 2 min: cards, checklists
@@ -261,7 +265,7 @@ export class TrelloApiService {
       dueComplete: options.dueComplete,
     });
 
-    if (formData.toString() === '') {
+    if (isEmptyForm(formData)) {
       return fail('No update parameters provided', 'NO_PARAMS');
     }
 
@@ -372,7 +376,7 @@ export class TrelloApiService {
       );
     }
 
-    const fileName = name || path.basename(filePath);
+    const fileName = name ?? path.basename(filePath);
     const formData = new FormData();
     formData.append('file', new Blob([fileBuffer]), fileName);
     if (name) formData.append('name', name);
@@ -474,7 +478,7 @@ export class TrelloApiService {
   ): Promise<ApiResponse<Label>> {
     const formData = buildForm({ name, color });
 
-    if (formData.toString() === '') {
+    if (isEmptyForm(formData)) {
       return fail('No update parameters provided', 'NO_PARAMS');
     }
 
@@ -589,7 +593,7 @@ export class TrelloApiService {
   ): Promise<ApiResponse<CheckItem>> {
     const formData = buildForm({ name, state });
 
-    if (formData.toString() === '') {
+    if (isEmptyForm(formData)) {
       return fail('No update parameters provided', 'NO_PARAMS');
     }
 
