@@ -1,8 +1,6 @@
 # Trello CLI
 
-Bun-native TypeScript CLI for Trello board, list, and card management. Zero runtime dependencies — uses Bun's built-in fetch and Node.js compat layer.
-
-Based on [ZenoxZX/trello-cli](https://github.com/ZenoxZX/trello-cli) (.NET), originally ported to TypeScript/Node.js by [Marcos Ferreira](https://github.com/marcosferr).
+Bun-native TypeScript CLI for Trello board, list, and card management. Zero runtime dependencies.
 
 ## Commands
 
@@ -15,7 +13,8 @@ task clean                           # Remove build/ and dist/
 # Quality
 task lint                            # Lint with Biome
 task format                          # Format with Biome (write)
-task check                           # Lint + typecheck (parallel)
+task test                            # Run tests (bun test)
+task check                           # Lint + typecheck + tests (parallel)
 
 # Pipelines
 task ci                              # Full CI locally: clean -> install -> format:check -> check -> build
@@ -29,24 +28,26 @@ task compile:all                     # Build binaries for all 4 platforms
 
 ```text
 src/
-├── index.ts              # CLI entry point (arg parsing, command dispatch)
+├── index.ts                  # CLI entry point (arg parsing, global flags, command dispatch)
 ├── commands/
-│   ├── boardCommands.ts  # Board operations (CRUD, activity)
-│   ├── listCommands.ts   # List operations (CRUD, archive)
-│   ├── cardCommands.ts   # Card operations (CRUD, comments, archive, history)
-│   ├── attachmentCommands.ts  # Attachment operations
-│   ├── labelCommands.ts  # Label operations (CRUD)
-│   ├── memberCommands.ts # Member operations (list, assign, remove)
-│   ├── workspaceCommands.ts   # Workspace operations
-│   └── checklistCommands.ts   # Checklist operations (CRUD)
+│   └── registry.ts           # Declarative command registry (all 52 commands)
 ├── services/
 │   ├── configService.ts      # Auth config (~/.trello-cli/config.json + env vars)
-│   └── trelloApiService.ts   # Trello REST API client
+│   ├── trelloApiService.ts   # Trello REST API client
+│   └── cacheService.ts       # Response caching
 ├── models/
-│   ├── types.ts          # Domain types (Board, Card, TrelloList, etc.)
-│   └── apiResponse.ts    # ApiResponse<T> wrapper with success/fail helpers
+│   ├── types.ts              # Domain types (Board, Card, TrelloList, etc.)
+│   └── apiResponse.ts        # ApiResponse<T> wrapper with success/fail helpers
 └── utils/
-    └── outputFormatter.ts  # JSON output (compact, null-stripped)
+    ├── outputFormatter.ts    # JSON/text output (compact, null-stripped)
+    ├── textFormatter.ts      # Human-readable text formatting
+    ├── httpClient.ts         # HTTP client wrapper
+    ├── paramValidation.ts    # Input validation (Trello IDs, dates, colors, paths, URLs)
+    ├── errorUtils.ts         # Error message extraction
+    └── logger.ts             # Verbose/debug logging
+tests/
+├── helpers/                  # Test utilities (mockFetch, setup, testUtils)
+└── unit/                     # Unit tests mirroring src/ structure
 ```
 
 ## Code Style
@@ -54,7 +55,8 @@ src/
 - TypeScript strict mode, ES2022 target, NodeNext modules
 - Biome for linting/formatting (indent 2, single quotes, semicolons, trailing commas es5)
 - Bun runtime
-- All CLI output is compact JSON: `{"ok":true,"data":...}` or `{"ok":false,"error":"...","code":"..."}`
+- Default output is human-readable text; `--json` flag switches to compact JSON
+- API responses use `ApiResponse<T>`: `{"ok":true,"data":...}` or `{"ok":false,"error":"...","code":"..."}`
 
 ## Environment Variables
 
@@ -62,5 +64,4 @@ src/
 |----------|---------|
 | `TRELLO_API_KEY` | Trello API key (overrides config file) |
 | `TRELLO_TOKEN` | Trello API token (overrides config file) |
-
-Alternatively, use `trello-cli --set-auth <api-key> <token>` to save credentials to `~/.trello-cli/config.json`.
+| `TRELLO_DEBUG` | Set to `1` for verbose HTTP logging |
