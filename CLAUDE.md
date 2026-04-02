@@ -30,7 +30,7 @@ task compile:all                     # Build binaries for all 4 platforms
 src/
 ├── index.ts                  # CLI entry point (arg parsing, global flags, command dispatch)
 ├── commands/
-│   └── registry.ts           # Declarative command registry (all 52 commands)
+│   └── registry.ts           # Declarative command registry (noun-verb subcommands)
 ├── services/
 │   ├── configService.ts      # Auth config (~/.trellocli/config.json + env vars)
 │   ├── trelloApiService.ts   # Trello REST API client

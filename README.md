@@ -63,8 +63,8 @@ bun link
 3. Configure the CLI:
 
 ```bash
-trellocli --set-auth <api-key> <token>
-trellocli --check-auth
+trellocli auth set <api-key> <token>
+trellocli auth check
 ```
 
 > **Important:** The Token is different from the Secret. The Secret is for OAuth apps — you need the Token for direct API access.
@@ -101,96 +101,96 @@ cp -r .claude/skills/trellocli ~/.claude/skills/
 ### Authentication
 
 ```bash
-trellocli --set-auth <api-key> <token>
-trellocli --check-auth
-trellocli --clear-auth
+trellocli auth set <api-key> <token>
+trellocli auth check
+trellocli auth clear
 ```
 
 ### Boards
 
 ```bash
-trellocli --get-boards
-trellocli --get-board <board-id>
-trellocli --create-board "<name>" [--desc "<desc>"] [--workspace <workspace-id>]
-trellocli --get-board-activity <board-id> [--limit <n>]
+trellocli boards list
+trellocli boards get <board-id>
+trellocli boards create "<name>" [--desc "<desc>"] [--workspace <workspace-id>]
+trellocli boards activity <board-id> [--limit <n>]
 ```
 
 ### Lists
 
 ```bash
-trellocli --get-lists <board-id>
-trellocli --create-list <board-id> "<name>"
-trellocli --archive-list <list-id>
+trellocli lists get <board-id>
+trellocli lists create <board-id> "<name>"
+trellocli lists archive <list-id>
 ```
 
 ### Cards
 
 ```bash
-trellocli --get-cards <list-id>
-trellocli --get-all-cards <board-id>
-trellocli --get-my-cards
-trellocli --get-card <card-id>
-trellocli --get-card-history <card-id> [--limit <n>]
-trellocli --create-card <list-id> "<name>" [--desc "<desc>"] [--due "YYYY-MM-DD"] [--start "YYYY-MM-DD"]
-trellocli --update-card <card-id> [--name "<name>"] [--desc "<desc>"] [--due "<date>"] [--start "<date>"] [--labels "<ids>"] [--members "<ids>"] [--due-complete]
-trellocli --move-card <card-id> <target-list-id>
-trellocli --copy-card <card-id> <target-list-id> [--keep "<what>"]
-trellocli --archive-card <card-id>
-trellocli --delete-card <card-id>
+trellocli cards list <list-id>
+trellocli cards list-all <board-id>
+trellocli cards mine
+trellocli cards get <card-id>
+trellocli cards history <card-id> [--limit <n>]
+trellocli cards create <list-id> "<name>" [--desc "<desc>"] [--due "YYYY-MM-DD"] [--start "YYYY-MM-DD"]
+trellocli cards update <card-id> [--name "<name>"] [--desc "<desc>"] [--due "<date>"] [--start "<date>"] [--labels "<ids>"] [--members "<ids>"] [--due-complete]
+trellocli cards move <card-id> <target-list-id>
+trellocli cards copy <card-id> <target-list-id> [--keep "<what>"]
+trellocli cards archive <card-id>
+trellocli cards delete <card-id>
 ```
 
 ### Comments
 
 ```bash
-trellocli --get-comments <card-id>
-trellocli --add-comment <card-id> "<text>"
-trellocli --update-comment <card-id> <comment-id> "<text>"
-trellocli --delete-comment <card-id> <comment-id>
+trellocli comments list <card-id>
+trellocli comments add <card-id> "<text>"
+trellocli comments update <card-id> <comment-id> "<text>"
+trellocli comments delete <card-id> <comment-id>
 ```
 
 ### Attachments
 
 ```bash
-trellocli --list-attachments <card-id>
-trellocli --upload-attachment <card-id> <file-path> [--name "<name>"]
-trellocli --attach-url <card-id> <url> [--name "<name>"]
-trellocli --delete-attachment <card-id> <attachment-id>
+trellocli attachments list <card-id>
+trellocli attachments upload <card-id> <file-path> [--name "<name>"]
+trellocli attachments attach-url <card-id> <url> [--name "<name>"]
+trellocli attachments delete <card-id> <attachment-id>
 ```
 
-> **Note:** Downloading attachments is not supported — Trello's download API requires browser authentication. Use `--attach-url` to link attachments.
+> **Note:** Downloading attachments is not supported — Trello's download API requires browser authentication. Use `attachments attach-url` to link attachments.
 
 ### Labels
 
 ```bash
-trellocli --get-board-labels <board-id>
-trellocli --create-label <board-id> "<name>" <color>
-trellocli --update-label <label-id> [--name "<name>"] [--color <color>]
-trellocli --delete-label <label-id>
+trellocli labels list <board-id>
+trellocli labels create <board-id> "<name>" <color>
+trellocli labels update <label-id> [--name "<name>"] [--color <color>]
+trellocli labels delete <label-id>
 ```
 
 ### Members
 
 ```bash
-trellocli --get-board-members <board-id>
-trellocli --assign-member <card-id> <member-id>
-trellocli --remove-member <card-id> <member-id>
+trellocli members list <board-id>
+trellocli members assign <card-id> <member-id>
+trellocli members remove <card-id> <member-id>
 ```
 
 ### Workspaces
 
 ```bash
-trellocli --get-workspaces
-trellocli --get-workspace-boards <workspace-id>
+trellocli workspaces list
+trellocli workspaces boards <workspace-id>
 ```
 
 ### Checklists
 
 ```bash
-trellocli --get-checklists <card-id>
-trellocli --create-checklist <card-id> "<name>"
-trellocli --add-checklist-item <checklist-id> "<name>"
-trellocli --update-checklist-item <card-id> <check-item-id> [--name "<name>"] [--state "complete|incomplete"]
-trellocli --delete-checklist <checklist-id>
+trellocli checklists list <card-id>
+trellocli checklists create <card-id> "<name>"
+trellocli checklists add-item <checklist-id> "<name>"
+trellocli checklists update-item <card-id> <check-item-id> [--name "<name>"] [--state "complete|incomplete"]
+trellocli checklists delete <checklist-id>
 ```
 
 ## Development

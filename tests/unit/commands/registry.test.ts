@@ -2,9 +2,12 @@ import { describe, test, expect, spyOn, afterEach } from 'bun:test';
 import {
   COMMANDS,
   COMMAND_MAP,
+  getCommand,
   parseArgs,
   validateParams,
-  generateHelp,
+  generateTopHelp,
+  generateNounHelp,
+  generateCommandHelp,
 } from '../../../src/commands/registry.js';
 import type { TrelloApiService } from '../../../src/services/trelloApiService.js';
 import { success } from '../../../src/models/apiResponse.js';
@@ -99,9 +102,9 @@ function makeApi(overrides: Partial<TrelloApiService> = {}): TrelloApiService {
   } as unknown as TrelloApiService;
 }
 
-function getCmd(flag: string) {
-  const cmd = COMMAND_MAP.get(flag);
-  if (!cmd) throw new Error(`Command ${flag} not found`);
+function getCmd(noun: string, verb: string) {
+  const cmd = getCommand(noun, verb);
+  if (!cmd) throw new Error(`Command ${noun} ${verb} not found`);
   return cmd;
 }
 
@@ -119,24 +122,27 @@ function captureOutput(): () => unknown {
 describe('Command Registry', () => {
   describe('COMMAND_MAP', () => {
     test('contains all registered commands', () => {
-      expect(COMMAND_MAP.size).toBe(COMMANDS.length);
+      let total = 0;
+      for (const [, verbMap] of COMMAND_MAP) {
+        total += verbMap.size;
+      }
+      expect(total).toBe(COMMANDS.length);
       for (const cmd of COMMANDS) {
-        expect(COMMAND_MAP.has(cmd.flag)).toBe(true);
+        expect(getCommand(cmd.noun, cmd.verb)).toBeDefined();
       }
     });
   });
 
   describe('parseArgs', () => {
     test('parses positional args', () => {
-      const cmd = getCmd('--get-cards');
-      const result = parseArgs(cmd, ['--get-cards', TEST_ID]);
+      const cmd = getCmd('cards', 'list');
+      const result = parseArgs(cmd, [TEST_ID]);
       expect(result.listId).toBe(TEST_ID);
     });
 
     test('parses named args', () => {
-      const cmd = getCmd('--create-card');
+      const cmd = getCmd('cards', 'create');
       const result = parseArgs(cmd, [
-        '--create-card',
         TEST_ID,
         'My Card',
         '--desc',
@@ -151,18 +157,14 @@ describe('Command Registry', () => {
     });
 
     test('parses boolean flags', () => {
-      const cmd = getCmd('--update-card');
-      const result = parseArgs(cmd, [
-        '--update-card',
-        TEST_ID,
-        '--due-complete',
-      ]);
+      const cmd = getCmd('cards', 'update');
+      const result = parseArgs(cmd, [TEST_ID, '--due-complete']);
       expect(result.dueComplete).toBe('true');
     });
 
     test('leaves missing named args undefined', () => {
-      const cmd = getCmd('--create-card');
-      const result = parseArgs(cmd, ['--create-card', TEST_ID, 'Name']);
+      const cmd = getCmd('cards', 'create');
+      const result = parseArgs(cmd, [TEST_ID, 'Name']);
       expect(result.desc).toBeUndefined();
       expect(result.due).toBeUndefined();
     });
@@ -171,7 +173,7 @@ describe('Command Registry', () => {
   describe('validateParams', () => {
     test('validates required params', () => {
       const getOutput = captureOutput();
-      const cmd = getCmd('--get-cards');
+      const cmd = getCmd('cards', 'list');
       const valid = validateParams(cmd.params ?? [], { listId: '' });
       expect(valid).toBe(false);
       const output = getOutput() as { ok: boolean; code: string };
@@ -181,7 +183,7 @@ describe('Command Registry', () => {
 
     test('validates trello ID format', () => {
       const getOutput = captureOutput();
-      const cmd = getCmd('--get-cards');
+      const cmd = getCmd('cards', 'list');
       const valid = validateParams(cmd.params ?? [], { listId: 'bad-id' });
       expect(valid).toBe(false);
       const output = getOutput() as { ok: boolean; code: string };
@@ -190,7 +192,7 @@ describe('Command Registry', () => {
 
     test('validates date format', () => {
       const getOutput = captureOutput();
-      const cmd = getCmd('--create-card');
+      const cmd = getCmd('cards', 'create');
       const valid = validateParams(cmd.params ?? [], {
         listId: TEST_ID,
         name: 'Card',
@@ -202,7 +204,7 @@ describe('Command Registry', () => {
     });
 
     test('skips validation for absent optional params', () => {
-      const cmd = getCmd('--create-card');
+      const cmd = getCmd('cards', 'create');
       const valid = validateParams(cmd.params ?? [], {
         listId: TEST_ID,
         name: 'Card',
@@ -212,19 +214,19 @@ describe('Command Registry', () => {
   });
 
   describe('command execution', () => {
-    test('--get-cards prints result', async () => {
+    test('cards list prints result', async () => {
       const cards = [
         { id: TEST_ID, name: 'Card', idList: TEST_ID_2, idBoard: 'b1' },
       ];
       const api = makeApi({ getCardsInList: async () => success(cards) });
-      const cmd = getCmd('--get-cards');
+      const cmd = getCmd('cards', 'list');
       const getOutput = captureOutput();
       await cmd.execute(api, makeConfig(), { listId: TEST_ID_2 });
       expect(getOutput()).toEqual({ ok: true, data: cards });
     });
 
-    test('--get-cards rejects missing list ID', async () => {
-      const cmd = getCmd('--get-cards');
+    test('cards list rejects missing list ID', async () => {
+      const cmd = getCmd('cards', 'list');
       const getOutput = captureOutput();
       await cmd.execute(makeApi(), makeConfig(), { listId: '' });
       const output = getOutput() as { ok: boolean; code: string };
@@ -232,8 +234,8 @@ describe('Command Registry', () => {
       expect(output.code).toBe('MISSING_PARAM');
     });
 
-    test('--create-card passes all fields', async () => {
-      const cmd = getCmd('--create-card');
+    test('cards create passes all fields', async () => {
+      const cmd = getCmd('cards', 'create');
       const getOutput = captureOutput();
       await cmd.execute(makeApi(), makeConfig(), {
         listId: TEST_ID_2,
@@ -245,7 +247,7 @@ describe('Command Registry', () => {
       expect((getOutput() as { ok: boolean }).ok).toBe(true);
     });
 
-    test('--update-card passes fields through', async () => {
+    test('cards update passes fields through', async () => {
       const api = makeApi({
         updateCard: async (_id, opts) => {
           expect(opts.name).toBe('New Name');
@@ -257,7 +259,7 @@ describe('Command Registry', () => {
           });
         },
       });
-      const cmd = getCmd('--update-card');
+      const cmd = getCmd('cards', 'update');
       const getOutput = captureOutput();
       await cmd.execute(api, makeConfig(), {
         cardId: TEST_ID,
@@ -266,8 +268,8 @@ describe('Command Registry', () => {
       expect((getOutput() as { ok: boolean }).ok).toBe(true);
     });
 
-    test('--move-card requires both IDs', async () => {
-      const cmd = getCmd('--move-card');
+    test('cards move requires both IDs', async () => {
+      const cmd = getCmd('cards', 'move');
       const getOutput = captureOutput();
       await cmd.execute(makeApi(), makeConfig(), {
         cardId: '',
@@ -276,28 +278,28 @@ describe('Command Registry', () => {
       expect((getOutput() as { ok: boolean }).ok).toBe(false);
     });
 
-    test('--add-comment requires card ID and text', async () => {
-      const cmd = getCmd('--add-comment');
+    test('comments add requires card ID and text', async () => {
+      const cmd = getCmd('comments', 'add');
       const getOutput = captureOutput();
       await cmd.execute(makeApi(), makeConfig(), { cardId: '', text: 'hi' });
       expect((getOutput() as { ok: boolean }).ok).toBe(false);
     });
 
-    test('--get-my-cards works without params', async () => {
-      const cmd = getCmd('--get-my-cards');
+    test('cards mine works without params', async () => {
+      const cmd = getCmd('cards', 'mine');
       const getOutput = captureOutput();
       await cmd.execute(makeApi(), makeConfig(), {});
       expect((getOutput() as { ok: boolean }).ok).toBe(true);
     });
 
-    test('--get-card-history passes limit', async () => {
+    test('cards history passes limit', async () => {
       const api = makeApi({
         getCardHistory: async (_cardId, limit) => {
           expect(limit).toBe('10');
           return success([]);
         },
       });
-      const cmd = getCmd('--get-card-history');
+      const cmd = getCmd('cards', 'history');
       captureOutput();
       await cmd.execute(api, makeConfig(), {
         cardId: TEST_ID,
@@ -305,7 +307,7 @@ describe('Command Registry', () => {
       });
     });
 
-    test('--copy-card defaults keep to all', async () => {
+    test('cards copy defaults keep to all', async () => {
       const api = makeApi({
         copyCard: async (_cardId, _listId, keep) => {
           expect(keep).toBe('all');
@@ -317,7 +319,7 @@ describe('Command Registry', () => {
           });
         },
       });
-      const cmd = getCmd('--copy-card');
+      const cmd = getCmd('cards', 'copy');
       captureOutput();
       await cmd.execute(api, makeConfig(), {
         cardId: TEST_ID,
@@ -326,31 +328,60 @@ describe('Command Registry', () => {
     });
   });
 
-  describe('generateHelp', () => {
+  describe('generateTopHelp', () => {
     test('includes version', () => {
-      const help = generateHelp('1.2.3');
+      const help = generateTopHelp('1.2.3');
       expect(help).toContain('trellocli v1.2.3');
     });
 
-    test('includes all command groups', () => {
-      const help = generateHelp('1.0.0');
-      expect(help).toContain('Board Commands:');
-      expect(help).toContain('Card Commands:');
-      expect(help).toContain('Checklist Commands:');
-    });
-
-    test('includes all command flags', () => {
-      const help = generateHelp('1.0.0');
-      for (const cmd of COMMANDS) {
-        expect(help).toContain(cmd.flag);
-      }
+    test('lists all command groups', () => {
+      const help = generateTopHelp('1.0.0');
+      expect(help).toContain('boards');
+      expect(help).toContain('cards');
+      expect(help).toContain('checklists');
+      expect(help).toContain('auth');
     });
 
     test('includes options section', () => {
-      const help = generateHelp('1.0.0');
+      const help = generateTopHelp('1.0.0');
       expect(help).toContain('--help');
       expect(help).toContain('--json');
       expect(help).toContain('--verbose');
+    });
+  });
+
+  describe('generateNounHelp', () => {
+    test('lists verbs for a noun', () => {
+      const help = generateNounHelp('boards', '1.0.0');
+      expect(help).toContain('list');
+      expect(help).toContain('get');
+      expect(help).toContain('create');
+      expect(help).toContain('activity');
+    });
+
+    test('returns error for unknown noun', () => {
+      const help = generateNounHelp('unknown', '1.0.0');
+      expect(help).toContain('Unknown command');
+    });
+  });
+
+  describe('generateCommandHelp', () => {
+    test('shows usage and params', () => {
+      const help = generateCommandHelp('boards', 'get');
+      expect(help).toContain('Get board details');
+      expect(help).toContain('<board id>');
+      expect(help).toContain('trellocli boards get');
+    });
+
+    test('shows named options', () => {
+      const help = generateCommandHelp('cards', 'create');
+      expect(help).toContain('--desc');
+      expect(help).toContain('--due');
+    });
+
+    test('returns error for unknown command', () => {
+      const help = generateCommandHelp('boards', 'unknown');
+      expect(help).toContain('Unknown command');
     });
   });
 });

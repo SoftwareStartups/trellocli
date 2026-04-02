@@ -24,29 +24,29 @@ description: Trello board, list and card management via CLI. Activate when user 
 
 ```bash
 # 1. Find board
-trellocli --json --get-boards | jq '.data[] | {id, name}'
+trellocli --json boards list | jq '.data[] | {id, name}'
 
 # 2. Find list by name
-trellocli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "To Do") | .id'
+trellocli --json lists get BOARD_ID | jq -r '.data[] | select(.name == "To Do") | .id'
 
 # 3. Cards in that list
-trellocli --json --get-cards LIST_ID | jq '.data[] | {id, name, due}'
+trellocli --json cards list LIST_ID | jq '.data[] | {id, name, due}'
 ```
 
 ## Common Patterns
 
 ```bash
 # All cards on a board with labels
-trellocli --json --get-all-cards BOARD_ID | jq '.data[] | {id, name, due, idList, labels: [.labels[]?.name]}'
+trellocli --json cards list-all BOARD_ID | jq '.data[] | {id, name, due, idList, labels: [.labels[]?.name]}'
 
 # My cards across all boards
-trellocli --json --get-my-cards | jq '.data[] | {id, name, idBoard}'
+trellocli --json cards mine | jq '.data[] | {id, name, idBoard}'
 
 # Extract a single ID (for scripting)
-trellocli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "Done") | .id'
+trellocli --json lists get BOARD_ID | jq -r '.data[] | select(.name == "Done") | .id'
 
 # Check auth
-trellocli --json --check-auth | jq '.ok'
+trellocli --json auth check | jq '.ok'
 ```
 
 Error codes: `AUTH_ERROR` `NOT_FOUND` `MISSING_PARAM` `HTTP_ERROR` `ERROR`

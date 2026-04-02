@@ -5,12 +5,19 @@ import * as path from 'node:path';
 import { ConfigService } from './services/configService.js';
 import { TrelloApiService } from './services/trelloApiService.js';
 import { CacheService } from './services/cacheService.js';
-import { success, fail } from './models/apiResponse.js';
+import { fail } from './models/apiResponse.js';
 import { print } from './utils/outputFormatter.js';
 import { errorMessage } from './utils/errorUtils.js';
 import { setVerbose } from './utils/logger.js';
 import { setJsonMode } from './utils/outputFormatter.js';
-import { COMMAND_MAP, parseArgs, generateHelp } from './commands/registry.js';
+import {
+  getCommand,
+  getGroup,
+  parseArgs,
+  generateTopHelp,
+  generateNounHelp,
+  generateCommandHelp,
+} from './commands/registry.js';
 
 function readVersion(): string {
   try {
@@ -46,11 +53,10 @@ async function main(): Promise<void> {
       a !== '--json' &&
       a !== '--no-cache'
   );
-  const config = new ConfigService();
 
-  // Check for help/version first
+  // Top-level help or no args
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-    console.log(generateHelp(VERSION));
+    console.log(generateTopHelp(VERSION));
     return;
   }
 
@@ -59,39 +65,39 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Handle auth config commands (no validation needed)
-  if (args[0] === '--set-auth') {
-    const apiKey = args[1] ?? '';
-    const token = args[2] ?? '';
+  const noun = args[0];
+  const verb = args[1];
 
-    if (!apiKey || !token) {
-      print(
-        fail('Usage: trellocli --set-auth <api-key> <token>', 'MISSING_PARAM')
-      );
+  // Noun-level help: `trellocli boards` or `trellocli boards --help`
+  if (!verb || verb === '--help' || verb === '-h') {
+    const group = getGroup(noun);
+    if (!group) {
+      print(fail(`Unknown command: ${noun}`, 'UNKNOWN_COMMAND'));
       return;
     }
+    console.log(generateNounHelp(noun, VERSION));
+    return;
+  }
 
-    const { success: ok, error } = config.saveAuth(apiKey, token);
-    if (ok) {
-      print(success({ message: 'Auth saved to ~/.trellocli/config.json' }));
+  // Command-level help: `trellocli boards get --help`
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(generateCommandHelp(noun, verb));
+    return;
+  }
+
+  const cmd = getCommand(noun, verb);
+  if (!cmd) {
+    if (getGroup(noun)) {
+      print(fail(`Unknown subcommand: ${noun} ${verb}`, 'UNKNOWN_COMMAND'));
     } else {
-      print(fail(error ?? 'Unknown error', 'SAVE_ERROR'));
+      print(fail(`Unknown command: ${noun}`, 'UNKNOWN_COMMAND'));
     }
     return;
   }
 
-  if (args[0] === '--clear-auth') {
-    const { success: ok, error } = config.clearAuth();
-    if (ok) {
-      print(success({ message: 'Auth cleared' }));
-    } else {
-      print(fail(error ?? 'Unknown error', 'CLEAR_ERROR'));
-    }
-    return;
-  }
-
-  // Validate auth for all other commands except check-auth
-  if (args[0] !== '--check-auth') {
+  // Auth validation: skip for all auth commands (set/clear/check handle it themselves)
+  const config = new ConfigService();
+  if (noun !== 'auth') {
     const { valid, error } = config.validate();
     if (!valid) {
       print(fail(error ?? 'Auth not configured', 'AUTH_ERROR'));
@@ -103,14 +109,9 @@ async function main(): Promise<void> {
   if (noCache) cache.setEnabled(false);
   const api = new TrelloApiService(config, cache);
 
-  const cmd = COMMAND_MAP.get(args[0]);
-  if (!cmd) {
-    print(fail(`Unknown command: ${args[0]}`, 'UNKNOWN_COMMAND'));
-    return;
-  }
-
   try {
-    const params = parseArgs(cmd, args);
+    const cmdArgs = args.slice(2); // strip noun + verb
+    const params = parseArgs(cmd, cmdArgs);
     await cmd.execute(api, config, params);
   } catch (ex) {
     print(fail(errorMessage(ex), 'ERROR'));

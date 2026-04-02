@@ -10,7 +10,7 @@ import {
   validateFilePath,
   validateUrl,
 } from '../utils/paramValidation.js';
-import { fail } from '../models/apiResponse.js';
+import { success, fail } from '../models/apiResponse.js';
 
 type Validator = 'trelloId' | 'date' | 'color' | 'filePath' | 'url';
 
@@ -30,9 +30,9 @@ interface ParamDef {
 }
 
 interface CommandDef {
-  flag: string;
+  noun: string;
+  verb: string;
   description: string;
-  group: string;
   params?: ParamDef[];
   /** Special flag params (present/absent), e.g. --due-complete */
   boolFlags?: string[];
@@ -90,9 +90,9 @@ export function validateParams(
 }
 
 function apiCmd(
-  flag: string,
+  noun: string,
+  verb: string,
   description: string,
-  group: string,
   params: ParamDef[],
   apiFn: (
     api: TrelloApiService,
@@ -101,9 +101,9 @@ function apiCmd(
   opts?: { boolFlags?: string[] }
 ): CommandDef {
   return {
-    flag,
+    noun,
+    verb,
     description,
-    group,
     params,
     boolFlags: opts?.boolFlags,
     async execute(api, _config, values) {
@@ -118,20 +118,18 @@ function apiCmd(
 
 export const COMMANDS: CommandDef[] = [
   // Board commands
-  apiCmd('--get-boards', 'List all boards', 'Board Commands', [], (api) =>
-    api.getBoards()
-  ),
+  apiCmd('boards', 'list', 'List all boards', [], (api) => api.getBoards()),
   apiCmd(
-    '--get-board',
+    'boards',
+    'get',
     'Get board details',
-    'Board Commands',
     [positional('boardId', 'Board ID', 'trelloId')],
     (api, p) => api.getBoard(get(p, 'boardId'))
   ),
   apiCmd(
-    '--create-board',
+    'boards',
+    'create',
     'Create a new board',
-    'Board Commands',
     [
       positional('name', 'Board name'),
       named('desc', 'Description', '--desc'),
@@ -140,9 +138,9 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.createBoard(get(p, 'name'), p.desc, p.workspace)
   ),
   apiCmd(
-    '--get-board-activity',
+    'boards',
+    'activity',
     'Get board activity',
-    'Board Commands',
     [
       positional('boardId', 'Board ID', 'trelloId'),
       named('limit', 'Limit', '--limit'),
@@ -152,16 +150,16 @@ export const COMMANDS: CommandDef[] = [
 
   // List commands
   apiCmd(
-    '--get-lists',
+    'lists',
+    'get',
     'Get lists in a board',
-    'List Commands',
     [positional('boardId', 'Board ID', 'trelloId')],
     (api, p) => api.getLists(get(p, 'boardId'))
   ),
   apiCmd(
-    '--create-list',
+    'lists',
+    'create',
     'Create a new list',
-    'List Commands',
     [
       positional('boardId', 'Board ID', 'trelloId'),
       positional('name', 'List name'),
@@ -169,46 +167,42 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.createList(get(p, 'boardId'), get(p, 'name'))
   ),
   apiCmd(
-    '--archive-list',
+    'lists',
+    'archive',
     'Archive a list',
-    'List Commands',
     [positional('listId', 'List ID', 'trelloId')],
     (api, p) => api.archiveList(get(p, 'listId'))
   ),
 
   // Card commands
   apiCmd(
-    '--get-cards',
+    'cards',
+    'list',
     'Get cards in a list',
-    'Card Commands',
     [positional('listId', 'List ID', 'trelloId')],
     (api, p) => api.getCardsInList(get(p, 'listId'))
   ),
   apiCmd(
-    '--get-all-cards',
+    'cards',
+    'list-all',
     'Get all cards in a board',
-    'Card Commands',
     [positional('boardId', 'Board ID', 'trelloId')],
     (api, p) => api.getCardsInBoard(get(p, 'boardId'))
   ),
-  apiCmd(
-    '--get-my-cards',
-    'Get all cards assigned to you',
-    'Card Commands',
-    [],
-    (api) => api.getMyCards()
+  apiCmd('cards', 'mine', 'Get all cards assigned to you', [], (api) =>
+    api.getMyCards()
   ),
   apiCmd(
-    '--get-card',
+    'cards',
+    'get',
     'Get card details',
-    'Card Commands',
     [positional('cardId', 'Card ID', 'trelloId')],
     (api, p) => api.getCard(get(p, 'cardId'))
   ),
   apiCmd(
-    '--get-card-history',
+    'cards',
+    'history',
     'Get card action history',
-    'Card Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       named('limit', 'Limit', '--limit'),
@@ -216,9 +210,9 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.getCardHistory(get(p, 'cardId'), p.limit)
   ),
   apiCmd(
-    '--create-card',
+    'cards',
+    'create',
     'Create a new card',
-    'Card Commands',
     [
       positional('listId', 'List ID', 'trelloId'),
       positional('name', 'Card name'),
@@ -230,9 +224,9 @@ export const COMMANDS: CommandDef[] = [
       api.createCard(get(p, 'listId'), get(p, 'name'), p.desc, p.due, p.start)
   ),
   apiCmd(
-    '--update-card',
+    'cards',
+    'update',
     'Update a card',
-    'Card Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       named('name', 'Name', '--name'),
@@ -255,9 +249,9 @@ export const COMMANDS: CommandDef[] = [
     { boolFlags: ['--due-complete'] }
   ),
   apiCmd(
-    '--move-card',
+    'cards',
+    'move',
     'Move a card to another list',
-    'Card Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('listId', 'List ID', 'trelloId'),
@@ -265,9 +259,9 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.moveCard(get(p, 'cardId'), get(p, 'listId'))
   ),
   apiCmd(
-    '--copy-card',
+    'cards',
+    'copy',
     'Copy a card to another list',
-    'Card Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('listId', 'Target list ID', 'trelloId'),
@@ -277,32 +271,32 @@ export const COMMANDS: CommandDef[] = [
       api.copyCard(get(p, 'cardId'), get(p, 'listId'), p.keep ?? 'all')
   ),
   apiCmd(
-    '--archive-card',
+    'cards',
+    'archive',
     'Archive a card',
-    'Card Commands',
     [positional('cardId', 'Card ID', 'trelloId')],
     (api, p) => api.archiveCard(get(p, 'cardId'))
   ),
   apiCmd(
-    '--delete-card',
+    'cards',
+    'delete',
     'Permanently delete a card',
-    'Card Commands',
     [positional('cardId', 'Card ID', 'trelloId')],
     (api, p) => api.deleteCard(get(p, 'cardId'))
   ),
 
   // Comment commands
   apiCmd(
-    '--get-comments',
+    'comments',
+    'list',
     'Get comments on a card',
-    'Comment Commands',
     [positional('cardId', 'Card ID', 'trelloId')],
     (api, p) => api.getComments(get(p, 'cardId'))
   ),
   apiCmd(
-    '--add-comment',
+    'comments',
+    'add',
     'Add a comment to a card',
-    'Comment Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('text', 'Comment text'),
@@ -310,9 +304,9 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.addComment(get(p, 'cardId'), get(p, 'text'))
   ),
   apiCmd(
-    '--update-comment',
+    'comments',
+    'update',
     'Update a comment',
-    'Comment Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('commentId', 'Comment ID'),
@@ -322,9 +316,9 @@ export const COMMANDS: CommandDef[] = [
       api.updateComment(get(p, 'cardId'), get(p, 'commentId'), get(p, 'text'))
   ),
   apiCmd(
-    '--delete-comment',
+    'comments',
+    'delete',
     'Delete a comment',
-    'Comment Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('commentId', 'Comment ID'),
@@ -334,16 +328,16 @@ export const COMMANDS: CommandDef[] = [
 
   // Attachment commands
   apiCmd(
-    '--list-attachments',
+    'attachments',
+    'list',
     'List attachments on a card',
-    'Attachment Commands',
     [positional('cardId', 'Card ID', 'trelloId')],
     (api, p) => api.getAttachments(get(p, 'cardId'))
   ),
   apiCmd(
-    '--upload-attachment',
+    'attachments',
+    'upload',
     'Upload a file attachment',
-    'Attachment Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('filePath', 'File path', 'filePath'),
@@ -353,9 +347,9 @@ export const COMMANDS: CommandDef[] = [
       api.uploadAttachment(get(p, 'cardId'), get(p, 'filePath'), p.name)
   ),
   apiCmd(
-    '--attach-url',
+    'attachments',
+    'attach-url',
     'Attach a URL to a card',
-    'Attachment Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('url', 'URL', 'url'),
@@ -364,9 +358,9 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.attachUrl(get(p, 'cardId'), get(p, 'url'), p.name)
   ),
   apiCmd(
-    '--delete-attachment',
+    'attachments',
+    'delete',
     'Delete an attachment',
-    'Attachment Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('attachmentId', 'Attachment ID', 'trelloId'),
@@ -376,16 +370,16 @@ export const COMMANDS: CommandDef[] = [
 
   // Label commands
   apiCmd(
-    '--get-board-labels',
+    'labels',
+    'list',
     'List labels on a board',
-    'Label Commands',
     [positional('boardId', 'Board ID', 'trelloId')],
     (api, p) => api.getBoardLabels(get(p, 'boardId'))
   ),
   apiCmd(
-    '--create-label',
+    'labels',
+    'create',
     'Create a label',
-    'Label Commands',
     [
       positional('boardId', 'Board ID', 'trelloId'),
       positional('name', 'Label name'),
@@ -395,9 +389,9 @@ export const COMMANDS: CommandDef[] = [
       api.createLabel(get(p, 'boardId'), get(p, 'name'), get(p, 'color'))
   ),
   apiCmd(
-    '--update-label',
+    'labels',
+    'update',
     'Update a label',
-    'Label Commands',
     [
       positional('labelId', 'Label ID', 'trelloId'),
       named('name', 'Name', '--name'),
@@ -406,25 +400,25 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.updateLabel(get(p, 'labelId'), p.name, p.color)
   ),
   apiCmd(
-    '--delete-label',
+    'labels',
+    'delete',
     'Delete a label',
-    'Label Commands',
     [positional('labelId', 'Label ID', 'trelloId')],
     (api, p) => api.deleteLabel(get(p, 'labelId'))
   ),
 
   // Member commands
   apiCmd(
-    '--get-board-members',
+    'members',
+    'list',
     'List members of a board',
-    'Member Commands',
     [positional('boardId', 'Board ID', 'trelloId')],
     (api, p) => api.getBoardMembers(get(p, 'boardId'))
   ),
   apiCmd(
-    '--assign-member',
+    'members',
+    'assign',
     'Assign a member to a card',
-    'Member Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('memberId', 'Member ID', 'trelloId'),
@@ -432,9 +426,9 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.assignMemberToCard(get(p, 'cardId'), get(p, 'memberId'))
   ),
   apiCmd(
-    '--remove-member',
+    'members',
+    'remove',
     'Remove a member from a card',
-    'Member Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('memberId', 'Member ID', 'trelloId'),
@@ -443,33 +437,29 @@ export const COMMANDS: CommandDef[] = [
   ),
 
   // Workspace commands
-  apiCmd(
-    '--get-workspaces',
-    'List all workspaces',
-    'Workspace Commands',
-    [],
-    (api) => api.getWorkspaces()
+  apiCmd('workspaces', 'list', 'List all workspaces', [], (api) =>
+    api.getWorkspaces()
   ),
   apiCmd(
-    '--get-workspace-boards',
+    'workspaces',
+    'boards',
     'List boards in a workspace',
-    'Workspace Commands',
     [positional('workspaceId', 'Workspace ID', 'trelloId')],
     (api, p) => api.getWorkspaceBoards(get(p, 'workspaceId'))
   ),
 
   // Checklist commands
   apiCmd(
-    '--get-checklists',
+    'checklists',
+    'list',
     'List checklists on a card',
-    'Checklist Commands',
     [positional('cardId', 'Card ID', 'trelloId')],
     (api, p) => api.getChecklists(get(p, 'cardId'))
   ),
   apiCmd(
-    '--create-checklist',
+    'checklists',
+    'create',
     'Create a checklist',
-    'Checklist Commands',
     [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('name', 'Checklist name'),
@@ -477,9 +467,9 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.createChecklist(get(p, 'cardId'), get(p, 'name'))
   ),
   apiCmd(
-    '--add-checklist-item',
+    'checklists',
+    'add-item',
     'Add an item to a checklist',
-    'Checklist Commands',
     [
       positional('checklistId', 'Checklist ID', 'trelloId'),
       positional('name', 'Item name'),
@@ -487,9 +477,9 @@ export const COMMANDS: CommandDef[] = [
     (api, p) => api.addCheckItem(get(p, 'checklistId'), get(p, 'name'))
   ),
   {
-    flag: '--update-checklist-item',
+    noun: 'checklists',
+    verb: 'update-item',
     description: 'Update a checklist item',
-    group: 'Checklist Commands',
     params: [
       positional('cardId', 'Card ID', 'trelloId'),
       positional('checkItemId', 'Check item ID', 'trelloId'),
@@ -519,18 +509,56 @@ export const COMMANDS: CommandDef[] = [
     },
   },
   apiCmd(
-    '--delete-checklist',
+    'checklists',
+    'delete',
     'Delete a checklist',
-    'Checklist Commands',
     [positional('checklistId', 'Checklist ID', 'trelloId')],
     (api, p) => api.deleteChecklist(get(p, 'checklistId'))
   ),
 
-  // Auth (special — handled via config, not api)
+  // Auth commands
   {
-    flag: '--check-auth',
+    noun: 'auth',
+    verb: 'set',
+    description: 'Save API key and token',
+    params: [positional('apiKey', 'API key'), positional('token', 'Token')],
+    async execute(_api, config, values) {
+      const params = this.params ?? [];
+      if (!validateParams(params, values)) return;
+      const apiKey = get(values, 'apiKey');
+      const token = get(values, 'token');
+      if (!apiKey || !token) {
+        print(
+          fail('Usage: trellocli auth set <api-key> <token>', 'MISSING_PARAM')
+        );
+        return;
+      }
+      const { success: ok, error } = config.saveAuth(apiKey, token);
+      if (ok) {
+        print(success({ message: 'Auth saved to ~/.trellocli/config.json' }));
+      } else {
+        print(fail(error ?? 'Unknown error', 'SAVE_ERROR'));
+      }
+    },
+  },
+  {
+    noun: 'auth',
+    verb: 'clear',
+    description: 'Clear saved authentication',
+    params: [],
+    async execute(_api, config) {
+      const { success: ok, error } = config.clearAuth();
+      if (ok) {
+        print(success({ message: 'Auth cleared' }));
+      } else {
+        print(fail(error ?? 'Unknown error', 'CLEAR_ERROR'));
+      }
+    },
+  },
+  {
+    noun: 'auth',
+    verb: 'check',
     description: 'Verify authentication',
-    group: 'Authentication',
     async execute(api, config) {
       const { valid, error } = config.validate();
       if (!valid) {
@@ -542,16 +570,32 @@ export const COMMANDS: CommandDef[] = [
   },
 ];
 
-/** Build lookup map for O(1) dispatch */
-export const COMMAND_MAP = new Map(COMMANDS.map((c) => [c.flag, c]));
+/** Build two-level lookup map: noun -> verb -> CommandDef */
+export const COMMAND_MAP = new Map<string, Map<string, CommandDef>>();
+for (const cmd of COMMANDS) {
+  let verbMap = COMMAND_MAP.get(cmd.noun);
+  if (!verbMap) {
+    verbMap = new Map();
+    COMMAND_MAP.set(cmd.noun, verbMap);
+  }
+  verbMap.set(cmd.verb, cmd);
+}
 
-/** Parse args into param values for a command */
+export function getCommand(noun: string, verb: string): CommandDef | undefined {
+  return COMMAND_MAP.get(noun)?.get(verb);
+}
+
+export function getGroup(noun: string): Map<string, CommandDef> | undefined {
+  return COMMAND_MAP.get(noun);
+}
+
+/** Parse args into param values for a command (args already stripped of noun+verb) */
 export function parseArgs(
   cmd: CommandDef,
   args: string[]
 ): Record<string, string | undefined> {
   const values: Record<string, string | undefined> = {};
-  let positionalIndex = 1; // args[0] is the command flag
+  let positionalIndex = 0;
 
   for (const p of cmd.params ?? []) {
     if (p.source === 'positional') {
@@ -576,48 +620,117 @@ export function parseArgs(
   return values;
 }
 
-/** Generate help text from command definitions */
-export function generateHelp(version: string): string {
+const NOUN_DESCRIPTIONS: Record<string, string> = {
+  boards: 'Manage boards',
+  lists: 'Manage lists',
+  cards: 'Manage cards',
+  comments: 'Manage card comments',
+  attachments: 'Manage card attachments',
+  labels: 'Manage labels',
+  members: 'Manage board members',
+  workspaces: 'Manage workspaces',
+  checklists: 'Manage checklists',
+  auth: 'Authentication',
+};
+
+/** Generate top-level help: trellocli --help */
+export function generateTopHelp(version: string): string {
   const lines: string[] = [
     `trellocli v${version}`,
     '',
-    'Usage: trellocli <command> [options]',
+    'Usage: trellocli <command> <subcommand> [args] [options]',
     '',
+    'Commands:',
   ];
 
-  const groups = new Map<string, CommandDef[]>();
-  for (const cmd of COMMANDS) {
-    const list = groups.get(cmd.group) ?? [];
-    list.push(cmd);
-    groups.set(cmd.group, list);
+  for (const [noun, verbMap] of COMMAND_MAP) {
+    const desc = NOUN_DESCRIPTIONS[noun] ?? '';
+    const verbs = [...verbMap.keys()].join(', ');
+    lines.push(`  ${noun.padEnd(16)} ${desc}  (${verbs})`);
   }
 
-  for (const [group, cmds] of groups) {
-    lines.push(`${group}:`);
-    for (const cmd of cmds) {
-      const paramHints = (cmd.params ?? [])
-        .map((p) => {
-          if (p.source === 'named') return `[${p.flag} "<${p.label}>"]`;
-          return p.required ? `<${p.label.toLowerCase()}>` : `[${p.label}]`;
-        })
-        .join(' ');
-      const boolHints = (cmd.boolFlags ?? []).map((f) => `[${f}]`).join(' ');
-      const usage = [cmd.flag, paramHints, boolHints].filter(Boolean).join(' ');
-      lines.push(`  ${usage.padEnd(50)} ${cmd.description}`);
-    }
-    lines.push('');
-  }
-
+  lines.push('');
   lines.push('Options:');
-  lines.push('  --help, -h                     Show this help');
-  lines.push('  --version, -v                  Show version');
+  lines.push('  --help, -h         Show help');
+  lines.push('  --version, -v      Show version');
   lines.push(
-    '  --json                         Output as JSON (default is human-readable text)'
+    '  --json             Output as JSON (default is human-readable text)'
   );
-  lines.push('  --no-cache                     Bypass response cache');
+  lines.push('  --no-cache         Bypass response cache');
+  lines.push('  --verbose, --debug Show HTTP request details on stderr');
+  lines.push('');
   lines.push(
-    '  --verbose, --debug             Show HTTP request details on stderr'
+    'Run "trellocli <command> --help" for more information on a command.'
   );
+
+  return lines.join('\n');
+}
+
+/** Generate noun-level help: trellocli boards --help */
+export function generateNounHelp(noun: string, _version: string): string {
+  const verbMap = COMMAND_MAP.get(noun);
+  if (!verbMap) return `Unknown command: ${noun}`;
+
+  const lines: string[] = [
+    `trellocli ${noun} - ${NOUN_DESCRIPTIONS[noun] ?? ''}`,
+    '',
+    `Usage: trellocli ${noun} <subcommand> [args] [options]`,
+    '',
+    'Subcommands:',
+  ];
+
+  for (const [verb, cmd] of verbMap) {
+    const paramHints = (cmd.params ?? [])
+      .filter((p) => p.source === 'positional')
+      .map((p) => `<${p.label.toLowerCase()}>`)
+      .join(' ');
+    const usage = [verb, paramHints].filter(Boolean).join(' ');
+    lines.push(`  ${usage.padEnd(40)} ${cmd.description}`);
+  }
+
+  lines.push('');
+  lines.push(`Run "trellocli ${noun} <subcommand> --help" for details.`);
+
+  return lines.join('\n');
+}
+
+/** Generate command-level help: trellocli boards get --help */
+export function generateCommandHelp(noun: string, verb: string): string {
+  const cmd = getCommand(noun, verb);
+  if (!cmd) return `Unknown command: ${noun} ${verb}`;
+
+  const positionals = (cmd.params ?? []).filter(
+    (p) => p.source === 'positional'
+  );
+  const namedParams = (cmd.params ?? []).filter((p) => p.source === 'named');
+  const positionalStr = positionals
+    .map((p) => `<${p.label.toLowerCase()}>`)
+    .join(' ');
+
+  const lines: string[] = [
+    cmd.description,
+    '',
+    `Usage: trellocli ${noun} ${verb}${positionalStr ? ` ${positionalStr}` : ''} [options]`,
+  ];
+
+  if (positionals.length > 0) {
+    lines.push('', 'Arguments:');
+    for (const p of positionals) {
+      lines.push(`  <${p.label.toLowerCase().padEnd(20)}> ${p.label}`);
+    }
+  }
+
+  if (namedParams.length > 0 || (cmd.boolFlags ?? []).length > 0) {
+    lines.push('', 'Options:');
+    for (const p of namedParams) {
+      lines.push(
+        `  ${(p.flag ?? '').padEnd(16)} <${p.label.toLowerCase()}>  ${p.label}`
+      );
+    }
+    for (const bf of cmd.boolFlags ?? []) {
+      lines.push(`  ${bf}`);
+    }
+  }
 
   return lines.join('\n');
 }

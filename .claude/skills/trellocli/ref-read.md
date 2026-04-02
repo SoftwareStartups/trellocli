@@ -6,61 +6,61 @@ All examples use `--json` for jq piping. Flag position doesn't matter.
 
 | Command | Args | Purpose |
 |---------|------|---------|
-| `--get-boards` | | All your boards |
-| `--get-board` | `BOARD_ID` | Single board detail |
+| `boards list` | | All your boards |
+| `boards get` | `BOARD_ID` | Single board detail |
 
 ```bash
-trellocli --json --get-boards | jq '.data[] | {id, name}'
-trellocli --json --get-board BOARD_ID | jq '.data | {id, name, desc, url}'
+trellocli --json boards list | jq '.data[] | {id, name}'
+trellocli --json boards get BOARD_ID | jq '.data | {id, name, desc, url}'
 ```
 
 ## Lists
 
 | Command | Args | Purpose |
 |---------|------|---------|
-| `--get-lists` | `BOARD_ID` | Lists in a board |
+| `lists get` | `BOARD_ID` | Lists in a board |
 
 ```bash
-trellocli --json --get-lists BOARD_ID | jq '.data[] | {id, name}'
-trellocli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "Done") | .id'
+trellocli --json lists get BOARD_ID | jq '.data[] | {id, name}'
+trellocli --json lists get BOARD_ID | jq -r '.data[] | select(.name == "Done") | .id'
 ```
 
 ## Cards
 
 | Command | Args | Purpose |
 |---------|------|---------|
-| `--get-cards` | `LIST_ID` | Cards in one list |
-| `--get-all-cards` | `BOARD_ID` | All cards in board (preferred) |
-| `--get-my-cards` | | Your cards across all boards |
-| `--get-card` | `CARD_ID` | Single card full detail |
-| `--get-card-history` | `CARD_ID [--limit N]` | Card action history |
+| `cards list` | `LIST_ID` | Cards in one list |
+| `cards list-all` | `BOARD_ID` | All cards in board (preferred) |
+| `cards mine` | | Your cards across all boards |
+| `cards get` | `CARD_ID` | Single card full detail |
+| `cards history` | `CARD_ID [--limit N]` | Card action history |
 
 ```bash
-trellocli --json --get-cards LIST_ID | jq '.data[] | {id, name, due}'
-trellocli --json --get-all-cards BOARD_ID | jq '.data[] | {id, name, due, idList, labels: [.labels[]?.name]}'
-trellocli --json --get-card CARD_ID | jq '.data | {id, name, desc, due, idList, url}'
-trellocli --json --get-my-cards | jq '.data[] | {id, name, idBoard}'
-trellocli --json --get-card-history CARD_ID --limit 5 | jq '.data[] | {type, date}'
+trellocli --json cards list LIST_ID | jq '.data[] | {id, name, due}'
+trellocli --json cards list-all BOARD_ID | jq '.data[] | {id, name, due, idList, labels: [.labels[]?.name]}'
+trellocli --json cards get CARD_ID | jq '.data | {id, name, desc, due, idList, url}'
+trellocli --json cards mine | jq '.data[] | {id, name, idBoard}'
+trellocli --json cards history CARD_ID --limit 5 | jq '.data[] | {type, date}'
 ```
 
 ## Comments
 
 | Command | Args | Purpose |
 |---------|------|---------|
-| `--get-comments` | `CARD_ID` | Comments on a card |
+| `comments list` | `CARD_ID` | Comments on a card |
 
 ```bash
-trellocli --json --get-comments CARD_ID | jq '.data[] | {id, text: .data.text, by: .memberCreator.fullName, date}'
+trellocli --json comments list CARD_ID | jq '.data[] | {id, text: .data.text, by: .memberCreator.fullName, date}'
 ```
 
 ## Attachments
 
 | Command | Args | Purpose |
 |---------|------|---------|
-| `--list-attachments` | `CARD_ID` | Attachments on a card |
+| `attachments list` | `CARD_ID` | Attachments on a card |
 
 ```bash
-trellocli --json --list-attachments CARD_ID | jq '.data[] | {id, name, url}'
+trellocli --json attachments list CARD_ID | jq '.data[] | {id, name, url}'
 ```
 
 Note: Downloading attachments not supported (requires browser auth).
@@ -69,28 +69,28 @@ Note: Downloading attachments not supported (requires browser auth).
 
 | Command | Args | Purpose |
 |---------|------|---------|
-| `--get-board-labels` | `BOARD_ID` | Labels on a board |
-| `--get-board-members` | `BOARD_ID` | Board members |
-| `--get-workspaces` | | Your workspaces |
-| `--get-workspace-boards` | `WORKSPACE_ID` | Boards in workspace |
+| `labels list` | `BOARD_ID` | Labels on a board |
+| `members list` | `BOARD_ID` | Board members |
+| `workspaces list` | | Your workspaces |
+| `workspaces boards` | `WORKSPACE_ID` | Boards in workspace |
 
 ```bash
-trellocli --json --get-board-labels BOARD_ID | jq '.data[] | {id, name, color}'
-trellocli --json --get-board-members BOARD_ID | jq '.data[] | {id, username, fullName}'
-trellocli --json --get-workspaces | jq '.data[] | {id, name}'
-trellocli --json --get-workspace-boards WS_ID | jq '.data[] | {id, name}'
+trellocli --json labels list BOARD_ID | jq '.data[] | {id, name, color}'
+trellocli --json members list BOARD_ID | jq '.data[] | {id, username, fullName}'
+trellocli --json workspaces list | jq '.data[] | {id, name}'
+trellocli --json workspaces boards WS_ID | jq '.data[] | {id, name}'
 ```
 
 ## Checklists & Activity
 
 | Command | Args | Purpose |
 |---------|------|---------|
-| `--get-checklists` | `CARD_ID` | Checklists on a card |
-| `--get-board-activity` | `BOARD_ID [--limit N]` | Recent board activity |
-| `--check-auth` | | Verify credentials |
+| `checklists list` | `CARD_ID` | Checklists on a card |
+| `boards activity` | `BOARD_ID [--limit N]` | Recent board activity |
+| `auth check` | | Verify credentials |
 
 ```bash
-trellocli --json --get-checklists CARD_ID | jq '.data[] | {id, name, items: [.checkItems[] | {name, state}]}'
-trellocli --json --get-board-activity BOARD_ID --limit 10 | jq '.data[] | {type, date, by: .memberCreator.fullName}'
-trellocli --json --check-auth | jq '.data | {username, fullName}'
+trellocli --json checklists list CARD_ID | jq '.data[] | {id, name, items: [.checkItems[] | {name, state}]}'
+trellocli --json boards activity BOARD_ID --limit 10 | jq '.data[] | {type, date, by: .memberCreator.fullName}'
+trellocli --json auth check | jq '.data | {username, fullName}'
 ```
