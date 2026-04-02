@@ -32,6 +32,16 @@ export interface UpdateCardOptions {
 
 const BASE_URL = 'https://api.trello.com/1';
 
+function buildForm(
+  fields: Record<string, string | undefined>
+): URLSearchParams {
+  const form = new URLSearchParams();
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined) form.append(key, value);
+  }
+  return form;
+}
+
 // Cache TTLs in milliseconds
 const TTL_LONG = 5 * 60 * 1000; // 5 min: boards, lists, labels, members, workspaces
 const TTL_MED = 2 * 60 * 1000; // 2 min: cards, checklists
@@ -149,12 +159,11 @@ export class TrelloApiService {
     desc?: string,
     workspaceId?: string
   ): Promise<ApiResponse<Board>> {
-    const formData = new URLSearchParams();
-    formData.append('name', name);
-    if (desc) formData.append('desc', desc);
-    if (workspaceId) formData.append('idOrganization', workspaceId);
     this.invalidateCache('/members/me/boards');
-    return this.request<Board>('/boards', { method: 'POST', body: formData });
+    return this.request<Board>('/boards', {
+      method: 'POST',
+      body: buildForm({ name, desc, idOrganization: workspaceId }),
+    });
   }
 
   async getBoardActivity(
@@ -196,11 +205,9 @@ export class TrelloApiService {
 
   async archiveList(listId: string): Promise<ApiResponse<TrelloList>> {
     this.invalidateCache('/lists/', '/boards/');
-    const formData = new URLSearchParams();
-    formData.append('value', 'true');
     return this.request<TrelloList>(`/lists/${listId}/closed`, {
       method: 'PUT',
-      body: formData,
+      body: buildForm({ value: 'true' }),
       notFoundMessage: 'List not found',
     });
   }
@@ -232,32 +239,27 @@ export class TrelloApiService {
     due?: string,
     start?: string
   ): Promise<ApiResponse<Card>> {
-    const formData = new URLSearchParams();
-    formData.append('idList', listId);
-    formData.append('name', name);
-    if (desc) formData.append('desc', desc);
-    if (due) formData.append('due', due);
-    if (start) formData.append('start', start);
     this.invalidateCache('/cards', '/lists/');
-    return this.request<Card>('/cards', { method: 'POST', body: formData });
+    return this.request<Card>('/cards', {
+      method: 'POST',
+      body: buildForm({ idList: listId, name, desc, due, start }),
+    });
   }
 
   async updateCard(
     cardId: string,
     options: UpdateCardOptions
   ): Promise<ApiResponse<Card>> {
-    const formData = new URLSearchParams();
-    if (options.name) formData.append('name', options.name);
-    if (options.desc !== undefined) formData.append('desc', options.desc);
-    if (options.due !== undefined) formData.append('due', options.due);
-    if (options.listId) formData.append('idList', options.listId);
-    if (options.labels !== undefined)
-      formData.append('idLabels', options.labels);
-    if (options.members !== undefined)
-      formData.append('idMembers', options.members);
-    if (options.start !== undefined) formData.append('start', options.start);
-    if (options.dueComplete !== undefined)
-      formData.append('dueComplete', options.dueComplete);
+    const formData = buildForm({
+      name: options.name,
+      desc: options.desc,
+      due: options.due,
+      idList: options.listId,
+      idLabels: options.labels,
+      idMembers: options.members,
+      start: options.start,
+      dueComplete: options.dueComplete,
+    });
 
     if (formData.toString() === '') {
       return fail('No update parameters provided', 'NO_PARAMS');
@@ -277,11 +279,9 @@ export class TrelloApiService {
 
   async archiveCard(cardId: string): Promise<ApiResponse<Card>> {
     this.invalidateCache(`/cards/${cardId}`, '/lists/', '/boards/');
-    const formData = new URLSearchParams();
-    formData.append('closed', 'true');
     return this.request<Card>(`/cards/${cardId}`, {
       method: 'PUT',
-      body: formData,
+      body: buildForm({ closed: 'true' }),
       notFoundMessage: 'Card not found',
     });
   }
@@ -390,12 +390,9 @@ export class TrelloApiService {
     name?: string
   ): Promise<ApiResponse<Attachment>> {
     this.invalidateCache(`/cards/${cardId}/attachments`);
-    const params = new URLSearchParams();
-    params.append('url', attachUrl);
-    if (name) params.append('name', name);
     return this.request<Attachment>(`/cards/${cardId}/attachments`, {
       method: 'POST',
-      body: params,
+      body: buildForm({ url: attachUrl, name }),
       notFoundMessage: 'Card not found',
     });
   }
@@ -419,11 +416,14 @@ export class TrelloApiService {
     keepFromSource: string = 'all'
   ): Promise<ApiResponse<Card>> {
     this.invalidateCache('/cards', '/lists/');
-    const formData = new URLSearchParams();
-    formData.append('idList', targetListId);
-    formData.append('idCardSource', cardId);
-    formData.append('keepFromSource', keepFromSource);
-    return this.request<Card>('/cards', { method: 'POST', body: formData });
+    return this.request<Card>('/cards', {
+      method: 'POST',
+      body: buildForm({
+        idList: targetListId,
+        idCardSource: cardId,
+        keepFromSource,
+      }),
+    });
   }
 
   // My cards
@@ -461,11 +461,10 @@ export class TrelloApiService {
     color: string
   ): Promise<ApiResponse<Label>> {
     this.invalidateCache(`/boards/${boardId}/labels`);
-    const formData = new URLSearchParams();
-    formData.append('name', name);
-    formData.append('color', color);
-    formData.append('idBoard', boardId);
-    return this.request<Label>('/labels', { method: 'POST', body: formData });
+    return this.request<Label>('/labels', {
+      method: 'POST',
+      body: buildForm({ name, color, idBoard: boardId }),
+    });
   }
 
   async updateLabel(
@@ -473,9 +472,7 @@ export class TrelloApiService {
     name?: string,
     color?: string
   ): Promise<ApiResponse<Label>> {
-    const formData = new URLSearchParams();
-    if (name) formData.append('name', name);
-    if (color) formData.append('color', color);
+    const formData = buildForm({ name, color });
 
     if (formData.toString() === '') {
       return fail('No update parameters provided', 'NO_PARAMS');
@@ -566,12 +563,9 @@ export class TrelloApiService {
     name: string
   ): Promise<ApiResponse<Checklist>> {
     this.invalidateCache(`/cards/${cardId}/checklists`);
-    const formData = new URLSearchParams();
-    formData.append('idCard', cardId);
-    formData.append('name', name);
     return this.request<Checklist>('/checklists', {
       method: 'POST',
-      body: formData,
+      body: buildForm({ idCard: cardId, name }),
     });
   }
 
@@ -593,9 +587,7 @@ export class TrelloApiService {
     name?: string,
     state?: string
   ): Promise<ApiResponse<CheckItem>> {
-    const formData = new URLSearchParams();
-    if (name) formData.append('name', name);
-    if (state) formData.append('state', state);
+    const formData = buildForm({ name, state });
 
     if (formData.toString() === '') {
       return fail('No update parameters provided', 'NO_PARAMS');

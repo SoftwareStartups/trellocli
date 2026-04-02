@@ -7,23 +7,21 @@ import {
   type mock,
 } from 'bun:test';
 import { TrelloApiService } from '../../../src/services/trelloApiService.js';
-import type { ConfigService } from '../../../src/services/configService.js';
 import {
   mockFetchResponse,
   mockFetchError,
   restoreFetch,
 } from '../../helpers/mockFetch.js';
+import { makeConfig } from '../../helpers/testUtils.js';
 
-function makeConfig(): ConfigService {
-  return {
-    apiKey: 'test-key',
-    token: 'test-token',
-    isConfigured: true,
-    getAuthQuery: () => 'key=test-key&token=test-token',
-    validate: () => ({ valid: true }),
-    saveAuth: () => ({ success: true }),
-    clearAuth: () => ({ success: true }),
-  } as unknown as ConfigService;
+function getLastFetchUrl(): string {
+  return (globalThis.fetch as ReturnType<typeof mock>).mock
+    .calls[0][0] as string;
+}
+
+function getLastFetchOpts(): RequestInit {
+  return (globalThis.fetch as ReturnType<typeof mock>).mock
+    .calls[0][1] as RequestInit;
 }
 
 describe('TrelloApiService', () => {
@@ -80,8 +78,7 @@ describe('TrelloApiService', () => {
       const result = await api.getBoards();
       expect(result.ok).toBe(true);
       expect(result.data).toEqual(boards);
-      const url = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0][0] as string;
+      const url = getLastFetchUrl();
       expect(url).toContain('/members/me/boards');
       expect(url).toContain('filter=open');
     });
@@ -110,17 +107,13 @@ describe('TrelloApiService', () => {
       mockFetchResponse({ body: board });
       const result = await api.createBoard('New');
       expect(result.ok).toBe(true);
-      const [, opts] = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0] as [string, RequestInit];
-      expect(opts.method).toBe('POST');
+      expect(getLastFetchOpts().method).toBe('POST');
     });
 
     test('creates board with desc and workspace', async () => {
       mockFetchResponse({ body: { id: 'b3', name: 'X', url: '' } });
       await api.createBoard('X', 'desc here', 'ws1');
-      const [, opts] = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0] as [string, RequestInit];
-      const body = opts.body as URLSearchParams;
+      const body = getLastFetchOpts().body as URLSearchParams;
       expect(body.get('desc')).toBe('desc here');
       expect(body.get('idOrganization')).toBe('ws1');
     });
@@ -142,8 +135,7 @@ describe('TrelloApiService', () => {
       mockFetchResponse({ body: { id: 'l2', name: 'Done', idBoard: 'b1' } });
       const result = await api.createList('b1', 'Done');
       expect(result.ok).toBe(true);
-      const url = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0][0] as string;
+      const url = getLastFetchUrl();
       expect(url).toContain('name=Done');
       expect(url).toContain('idBoard=b1');
     });
@@ -151,9 +143,7 @@ describe('TrelloApiService', () => {
     test('encodes special characters in name', async () => {
       mockFetchResponse({ body: { id: 'l3', name: 'A & B', idBoard: 'b1' } });
       await api.createList('b1', 'A & B');
-      const url = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0][0] as string;
-      expect(url).toContain('name=A%20%26%20B');
+      expect(getLastFetchUrl()).toContain('name=A%20%26%20B');
     });
   });
 
@@ -164,10 +154,8 @@ describe('TrelloApiService', () => {
       });
       const result = await api.archiveList('l1');
       expect(result.ok).toBe(true);
-      const [url, opts] = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0] as [string, RequestInit];
-      expect(url).toContain('/lists/l1/closed');
-      expect(opts.method).toBe('PUT');
+      expect(getLastFetchUrl()).toContain('/lists/l1/closed');
+      expect(getLastFetchOpts().method).toBe('PUT');
     });
   });
 
@@ -189,9 +177,7 @@ describe('TrelloApiService', () => {
       });
       const result = await api.createCard('l1', 'New');
       expect(result.ok).toBe(true);
-      const [, opts] = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0] as [string, RequestInit];
-      const body = opts.body as URLSearchParams;
+      const body = getLastFetchOpts().body as URLSearchParams;
       expect(body.get('idList')).toBe('l1');
       expect(body.get('name')).toBe('New');
     });
@@ -201,9 +187,7 @@ describe('TrelloApiService', () => {
         body: { id: 'c3', name: 'C', idList: 'l1', idBoard: 'b1' },
       });
       await api.createCard('l1', 'C', 'desc', '2025-01-15', '2025-01-10');
-      const [, opts] = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0] as [string, RequestInit];
-      const body = opts.body as URLSearchParams;
+      const body = getLastFetchOpts().body as URLSearchParams;
       expect(body.get('desc')).toBe('desc');
       expect(body.get('due')).toBe('2025-01-15');
       expect(body.get('start')).toBe('2025-01-10');
@@ -233,9 +217,7 @@ describe('TrelloApiService', () => {
       });
       const result = await api.moveCard('c1', 'l2');
       expect(result.ok).toBe(true);
-      const [, opts] = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0] as [string, RequestInit];
-      const body = opts.body as URLSearchParams;
+      const body = getLastFetchOpts().body as URLSearchParams;
       expect(body.get('idList')).toBe('l2');
     });
   });
@@ -254,9 +236,7 @@ describe('TrelloApiService', () => {
     test('fetches comments with commentCard filter', async () => {
       mockFetchResponse({ body: [] });
       await api.getComments('c1');
-      const url = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0][0] as string;
-      expect(url).toContain('filter=commentCard');
+      expect(getLastFetchUrl()).toContain('filter=commentCard');
     });
   });
 
@@ -272,9 +252,7 @@ describe('TrelloApiService', () => {
       });
       const result = await api.addComment('c1', 'hi');
       expect(result.ok).toBe(true);
-      const url = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0][0] as string;
-      expect(url).toContain('text=hi');
+      expect(getLastFetchUrl()).toContain('text=hi');
     });
   });
 
@@ -424,8 +402,7 @@ describe('TrelloApiService', () => {
     test('includes auth params in URL', async () => {
       mockFetchResponse({ body: [] });
       await api.getBoards();
-      const url = (globalThis.fetch as ReturnType<typeof mock>).mock
-        .calls[0][0] as string;
+      const url = getLastFetchUrl();
       expect(url).toContain('key=test-key');
       expect(url).toContain('token=test-token');
     });

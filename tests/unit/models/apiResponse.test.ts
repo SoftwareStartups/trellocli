@@ -3,34 +3,19 @@ import { success, fail } from '../../../src/models/apiResponse.js';
 
 describe('apiResponse', () => {
   describe('success', () => {
-    test('wraps data with ok: true', () => {
-      const result = success({ id: '123', name: 'Test' });
-      expect(result).toEqual({
-        ok: true,
-        data: { id: '123', name: 'Test' },
-      });
-    });
-
-    test('wraps array data', () => {
-      const result = success([1, 2, 3]);
-      expect(result).toEqual({ ok: true, data: [1, 2, 3] });
-    });
-
-    test('wraps null data', () => {
-      const result = success(null);
-      expect(result).toEqual({ ok: true, data: null });
-    });
-
-    test('wraps string data', () => {
-      const result = success('hello');
-      expect(result).toEqual({ ok: true, data: 'hello' });
+    test.each([
+      ['object', { id: '123', name: 'Test' }],
+      ['array', [1, 2, 3]],
+      ['null', null],
+      ['string', 'hello'],
+    ])('wraps %s data with ok: true', (_label, data) => {
+      expect(success(data)).toEqual({ ok: true, data });
     });
   });
 
   describe('fail', () => {
     test('creates error response with default code', () => {
-      const result = fail('Something went wrong');
-      expect(result).toEqual({
+      expect(fail('Something went wrong')).toEqual({
         ok: false,
         error: 'Something went wrong',
         code: 'ERROR',
@@ -38,8 +23,7 @@ describe('apiResponse', () => {
     });
 
     test('creates error response with custom code', () => {
-      const result = fail('Not found', 'NOT_FOUND');
-      expect(result).toEqual({
+      expect(fail('Not found', 'NOT_FOUND')).toEqual({
         ok: false,
         error: 'Not found',
         code: 'NOT_FOUND',
@@ -47,8 +31,7 @@ describe('apiResponse', () => {
     });
 
     test('has no data field', () => {
-      const result = fail('err');
-      expect(result).not.toHaveProperty('data');
+      expect(fail('err')).not.toHaveProperty('data');
     });
   });
 });

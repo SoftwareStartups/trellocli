@@ -7,20 +7,13 @@ describe('errorUtils', () => {
       expect(errorMessage(new Error('boom'))).toBe('boom');
     });
 
-    test('converts string to string', () => {
-      expect(errorMessage('raw string')).toBe('raw string');
-    });
-
-    test('converts number to string', () => {
-      expect(errorMessage(42)).toBe('42');
-    });
-
-    test('converts null to string', () => {
-      expect(errorMessage(null)).toBe('null');
-    });
-
-    test('converts undefined to string', () => {
-      expect(errorMessage(undefined)).toBe('undefined');
+    test.each([
+      ['string', 'raw string', 'raw string'],
+      ['number', 42, '42'],
+      ['null', null, 'null'],
+      ['undefined', undefined, 'undefined'],
+    ])('converts %s to string', (_label, input, expected) => {
+      expect(errorMessage(input)).toBe(expected);
     });
   });
 });
