@@ -8,9 +8,9 @@
       "Bash(task build:*)",
       "Bash(task ci:*)",
       "Bash(task compile:*)",
-      "Bash(bunx biome:*)",
+      "Bash(bun run lint:*)",
+      "Bash(bun run typecheck:*)",
       "Bash(bun test:*)",
-      "Bash(bun install:*)",
       "Skill(commit-commands:commit)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__query-docs"

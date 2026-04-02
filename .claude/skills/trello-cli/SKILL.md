@@ -5,96 +5,54 @@ description: Trello board, list and card management via CLI. Activate when user 
 
 # Trello CLI
 
-Manage Trello boards, lists, and cards using the `trello-cli` command.
+## Rules
 
-> **Runtime:** Node.js 18+ (uses native fetch)
+1. Only activate when "Trello" is mentioned
+2. Always use `--json` and pipe through `jq` to keep context small
+3. Check `.ok` in output — `true` = success, `false` = error
+4. Resolve IDs progressively: board → list → card
+5. Use `--no-cache` when data seems stale
 
-## Important Rules
+## Output
 
-1. **Only activate when "Trello" is mentioned** - Do not interfere with Notion, Jira, or other tools
-2. **Check JSON output after each command** - `ok: true` means success, `ok: false` means error
-3. **Follow the workflow**: First find board ID, then list ID, then perform card operations
-
-## Quick Reference
-
-### Board & List
-
-```bash
-trello-cli --get-boards                              # List all boards
-trello-cli --get-lists <board-id>                    # Get lists in board
+```json
+{"ok":true,"data":[...]}
+{"ok":false,"error":"...","code":"..."}
 ```
 
-### Cards
+## Primary Workflow: Cards in a Column
 
 ```bash
-trello-cli --get-all-cards <board-id>                # All cards in board
-trello-cli --create-card <list-id> "<name>"          # Create card
-trello-cli --create-card <list-id> "<name>" --desc "<desc>" --due "2025-01-15"
-trello-cli --update-card <card-id> --name "<name>" --desc "<desc>"
-trello-cli --move-card <card-id> <list-id>           # Move card
-trello-cli --delete-card <card-id>                   # Delete card
-trello-cli --get-comments <card-id>                  # Get comments
-trello-cli --add-comment <card-id> "<text>"          # Add comment
+# 1. Find board
+trello-cli --json --get-boards | jq '.data[] | {id, name}'
+
+# 2. Find list by name
+trello-cli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "To Do") | .id'
+
+# 3. Cards in that list
+trello-cli --json --get-cards LIST_ID | jq '.data[] | {id, name, due}'
 ```
 
-### Attachments
+## Common Patterns
 
 ```bash
-trello-cli --list-attachments <card-id>              # List attachments
-trello-cli --upload-attachment <card-id> <file-path> [--name "<name>"]
-trello-cli --attach-url <card-id> <url> [--name "<name>"]
-trello-cli --delete-attachment <card-id> <attach-id>
+# All cards on a board with labels
+trello-cli --json --get-all-cards BOARD_ID | jq '.data[] | {id, name, due, idList, labels: [.labels[]?.name]}'
+
+# My cards across all boards
+trello-cli --json --get-my-cards | jq '.data[] | {id, name, idBoard}'
+
+# Extract a single ID (for scripting)
+trello-cli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "Done") | .id'
+
+# Check auth
+trello-cli --json --check-auth | jq '.ok'
 ```
 
-**Note:** Downloading attachments is not supported - Trello's download API requires browser authentication. Use `--attach-url` to link attachments between cards.
+Error codes: `AUTH_ERROR` `NOT_FOUND` `MISSING_PARAM` `HTTP_ERROR` `ERROR`
 
-## Typical Workflows
+## References
 
-### List All Tasks
-```bash
-trello-cli --get-boards           # → Get board ID
-trello-cli --get-all-cards <id>   # → See all cards
-```
-
-### Add New Task
-```bash
-trello-cli --get-boards           # → Get board ID
-trello-cli --get-lists <id>       # → Find "To Do" or "Backlog" list ID
-trello-cli --create-card <list-id> "<task-name>"
-```
-
-### Move to Done
-```bash
-trello-cli --get-lists <board-id> # → Find "Done" list ID
-trello-cli --move-card <card-id> <done-list-id>
-```
-
-## When Uncertain
-
-If you encounter an error or don't know how to proceed:
-
-```bash
-trello-cli --help
-```
-
-For detailed command reference, see [REFERENCE.md](REFERENCE.md).
-
-## Example Scenarios
-
-**User:** "Show my Trello tasks"
-→ Run `--get-boards`, then `--get-all-cards <board-id>`
-
-**User:** "Add a new task to Trello"
-→ Run `--get-boards`, `--get-lists`, then `--create-card`
-
-**User:** "Move the card to Done on Trello"
-→ Run `--get-lists` to find Done ID, then `--move-card`
-
-**User:** "Update the Trello card description"
-→ Run `--update-card <card-id> --desc "<new-desc>"`
-
-**User:** "Upload this file to the Trello card"
-→ Run `--upload-attachment <card-id> "<file-path>"`
-
-**User:** "Link an attachment to another Trello card"
-→ Run `--list-attachments <source-card-id>` to get the URL, then `--attach-url <target-card-id> <url>`
+- **Read commands + jq:** [ref-read.md](ref-read.md)
+- **Write commands:** [ref-write.md](ref-write.md)
+- **Full help:** `trello-cli --help`
