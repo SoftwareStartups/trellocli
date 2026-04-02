@@ -148,14 +148,14 @@ export class ConfigService {
     if (!this.apiKey) {
       return {
         valid: false,
-        error: 'API Key not set. Use: trellocli --set-auth <api-key> <token>',
+        error: 'API Key not set. Use: trellocli auth set <api-key> <token>',
       };
     }
 
     if (!this.token) {
       return {
         valid: false,
-        error: 'Token not set. Use: trellocli --set-auth <api-key> <token>',
+        error: 'Token not set. Use: trellocli auth set <api-key> <token>',
       };
     }
 
