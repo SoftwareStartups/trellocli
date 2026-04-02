@@ -9,7 +9,7 @@ describe('ConfigService', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trello-cli-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trellocli-test-'));
     delete process.env.TRELLO_API_KEY;
     delete process.env.TRELLO_TOKEN;
   });

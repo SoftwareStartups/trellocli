@@ -579,9 +579,9 @@ export function parseArgs(
 /** Generate help text from command definitions */
 export function generateHelp(version: string): string {
   const lines: string[] = [
-    `trello-cli v${version}`,
+    `trellocli v${version}`,
     '',
-    'Usage: trello-cli <command> [options]',
+    'Usage: trellocli <command> [options]',
     '',
   ];
 

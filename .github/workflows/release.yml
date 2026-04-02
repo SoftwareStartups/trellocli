@@ -59,12 +59,12 @@ jobs:
       - name: Setup Bun environment
         uses: ./.github/actions/setup-bun-env
       - name: Build binary
-        run: bun build src/index.ts --compile --target=${{ matrix.target }} --outfile dist/trello-cli-${{ matrix.platform }}
+        run: bun build src/index.ts --compile --target=${{ matrix.target }} --outfile dist/trellocli-${{ matrix.platform }}
       - name: Upload artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: trello-cli-${{ matrix.platform }}
-          path: dist/trello-cli-${{ matrix.platform }}
+          name: trellocli-${{ matrix.platform }}
+          path: dist/trellocli-${{ matrix.platform }}
           retention-days: 1
 
   release:

@@ -1,12 +1,12 @@
-# Trello CLI
+# Trellocli
 
 A Bun-native TypeScript CLI for Trello integration with Claude Code. Manage your Trello boards, lists, and cards using natural language through Claude Code.
 
-> **Attribution:** Based on [trello-cli-ts](https://github.com/marcosferr/trello-cli-ts) by Marcos Ferreira, itself a TypeScript port of [ZenoxZX/trello-cli](https://github.com/ZenoxZX/trello-cli) (.NET). Now maintained by [SoftwareStartups](https://github.com/SoftwareStartups).
+> **Attribution:** Based on [trellocli-ts](https://github.com/marcosferr/trellocli-ts) by Marcos Ferreira, itself a TypeScript port of [ZenoxZX/trellocli](https://github.com/ZenoxZX/trellocli) (.NET). Now maintained by [SoftwareStartups](https://github.com/SoftwareStartups).
 
 ## What is it?
 
-`trello-cli` is a command-line tool that communicates with the Trello API. It can be used standalone or through Claude Code to:
+`trellocli` is a command-line tool that communicates with the Trello API. It can be used standalone or through Claude Code to:
 
 - Manage boards, lists, and cards
 - Track tasks with due dates, labels, and checklists
@@ -21,24 +21,24 @@ Download a pre-compiled binary for your platform from [GitHub Releases](https://
 
 ```bash
 # macOS (Apple Silicon)
-curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trello-cli-darwin-arm64 -o trello-cli
-chmod +x trello-cli
-sudo mv trello-cli /usr/local/bin/
+curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trellocli-darwin-arm64 -o trellocli
+chmod +x trellocli
+sudo mv trellocli /usr/local/bin/
 
 # macOS (Intel)
-curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trello-cli-darwin-x64 -o trello-cli
-chmod +x trello-cli
-sudo mv trello-cli /usr/local/bin/
+curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trellocli-darwin-x64 -o trellocli
+chmod +x trellocli
+sudo mv trellocli /usr/local/bin/
 
 # Linux (x64)
-curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trello-cli-linux-x64 -o trello-cli
-chmod +x trello-cli
-sudo mv trello-cli /usr/local/bin/
+curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trellocli-linux-x64 -o trellocli
+chmod +x trellocli
+sudo mv trellocli /usr/local/bin/
 
 # Linux (ARM64)
-curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trello-cli-linux-arm64 -o trello-cli
-chmod +x trello-cli
-sudo mv trello-cli /usr/local/bin/
+curl -L https://github.com/SoftwareStartups/trellocli/releases/latest/download/trellocli-linux-arm64 -o trellocli
+chmod +x trellocli
+sudo mv trellocli /usr/local/bin/
 ```
 
 ### From Source
@@ -63,8 +63,8 @@ bun link
 3. Configure the CLI:
 
 ```bash
-trello-cli --set-auth <api-key> <token>
-trello-cli --check-auth
+trellocli --set-auth <api-key> <token>
+trellocli --check-auth
 ```
 
 > **Important:** The Token is different from the Secret. The Secret is for OAuth apps — you need the Token for direct API access.
@@ -80,10 +80,10 @@ Simply mention "Trello" when talking to Claude Code:
 "List my Trello boards"
 ```
 
-This repo includes a Claude Code skill (`.claude/skills/trello-cli/`) that teaches Claude which commands to run. To install:
+This repo includes a Claude Code skill (`.claude/skills/trellocli/`) that teaches Claude which commands to run. To install:
 
 ```bash
-cp -r .claude/skills/trello-cli ~/.claude/skills/
+cp -r .claude/skills/trellocli ~/.claude/skills/
 ```
 
 ## Command Reference
@@ -101,60 +101,60 @@ cp -r .claude/skills/trello-cli ~/.claude/skills/
 ### Authentication
 
 ```bash
-trello-cli --set-auth <api-key> <token>
-trello-cli --check-auth
-trello-cli --clear-auth
+trellocli --set-auth <api-key> <token>
+trellocli --check-auth
+trellocli --clear-auth
 ```
 
 ### Boards
 
 ```bash
-trello-cli --get-boards
-trello-cli --get-board <board-id>
-trello-cli --create-board "<name>" [--desc "<desc>"] [--workspace <workspace-id>]
-trello-cli --get-board-activity <board-id> [--limit <n>]
+trellocli --get-boards
+trellocli --get-board <board-id>
+trellocli --create-board "<name>" [--desc "<desc>"] [--workspace <workspace-id>]
+trellocli --get-board-activity <board-id> [--limit <n>]
 ```
 
 ### Lists
 
 ```bash
-trello-cli --get-lists <board-id>
-trello-cli --create-list <board-id> "<name>"
-trello-cli --archive-list <list-id>
+trellocli --get-lists <board-id>
+trellocli --create-list <board-id> "<name>"
+trellocli --archive-list <list-id>
 ```
 
 ### Cards
 
 ```bash
-trello-cli --get-cards <list-id>
-trello-cli --get-all-cards <board-id>
-trello-cli --get-my-cards
-trello-cli --get-card <card-id>
-trello-cli --get-card-history <card-id> [--limit <n>]
-trello-cli --create-card <list-id> "<name>" [--desc "<desc>"] [--due "YYYY-MM-DD"] [--start "YYYY-MM-DD"]
-trello-cli --update-card <card-id> [--name "<name>"] [--desc "<desc>"] [--due "<date>"] [--start "<date>"] [--labels "<ids>"] [--members "<ids>"] [--due-complete]
-trello-cli --move-card <card-id> <target-list-id>
-trello-cli --copy-card <card-id> <target-list-id> [--keep "<what>"]
-trello-cli --archive-card <card-id>
-trello-cli --delete-card <card-id>
+trellocli --get-cards <list-id>
+trellocli --get-all-cards <board-id>
+trellocli --get-my-cards
+trellocli --get-card <card-id>
+trellocli --get-card-history <card-id> [--limit <n>]
+trellocli --create-card <list-id> "<name>" [--desc "<desc>"] [--due "YYYY-MM-DD"] [--start "YYYY-MM-DD"]
+trellocli --update-card <card-id> [--name "<name>"] [--desc "<desc>"] [--due "<date>"] [--start "<date>"] [--labels "<ids>"] [--members "<ids>"] [--due-complete]
+trellocli --move-card <card-id> <target-list-id>
+trellocli --copy-card <card-id> <target-list-id> [--keep "<what>"]
+trellocli --archive-card <card-id>
+trellocli --delete-card <card-id>
 ```
 
 ### Comments
 
 ```bash
-trello-cli --get-comments <card-id>
-trello-cli --add-comment <card-id> "<text>"
-trello-cli --update-comment <card-id> <comment-id> "<text>"
-trello-cli --delete-comment <card-id> <comment-id>
+trellocli --get-comments <card-id>
+trellocli --add-comment <card-id> "<text>"
+trellocli --update-comment <card-id> <comment-id> "<text>"
+trellocli --delete-comment <card-id> <comment-id>
 ```
 
 ### Attachments
 
 ```bash
-trello-cli --list-attachments <card-id>
-trello-cli --upload-attachment <card-id> <file-path> [--name "<name>"]
-trello-cli --attach-url <card-id> <url> [--name "<name>"]
-trello-cli --delete-attachment <card-id> <attachment-id>
+trellocli --list-attachments <card-id>
+trellocli --upload-attachment <card-id> <file-path> [--name "<name>"]
+trellocli --attach-url <card-id> <url> [--name "<name>"]
+trellocli --delete-attachment <card-id> <attachment-id>
 ```
 
 > **Note:** Downloading attachments is not supported — Trello's download API requires browser authentication. Use `--attach-url` to link attachments.
@@ -162,35 +162,35 @@ trello-cli --delete-attachment <card-id> <attachment-id>
 ### Labels
 
 ```bash
-trello-cli --get-board-labels <board-id>
-trello-cli --create-label <board-id> "<name>" <color>
-trello-cli --update-label <label-id> [--name "<name>"] [--color <color>]
-trello-cli --delete-label <label-id>
+trellocli --get-board-labels <board-id>
+trellocli --create-label <board-id> "<name>" <color>
+trellocli --update-label <label-id> [--name "<name>"] [--color <color>]
+trellocli --delete-label <label-id>
 ```
 
 ### Members
 
 ```bash
-trello-cli --get-board-members <board-id>
-trello-cli --assign-member <card-id> <member-id>
-trello-cli --remove-member <card-id> <member-id>
+trellocli --get-board-members <board-id>
+trellocli --assign-member <card-id> <member-id>
+trellocli --remove-member <card-id> <member-id>
 ```
 
 ### Workspaces
 
 ```bash
-trello-cli --get-workspaces
-trello-cli --get-workspace-boards <workspace-id>
+trellocli --get-workspaces
+trellocli --get-workspace-boards <workspace-id>
 ```
 
 ### Checklists
 
 ```bash
-trello-cli --get-checklists <card-id>
-trello-cli --create-checklist <card-id> "<name>"
-trello-cli --add-checklist-item <checklist-id> "<name>"
-trello-cli --update-checklist-item <card-id> <check-item-id> [--name "<name>"] [--state "complete|incomplete"]
-trello-cli --delete-checklist <checklist-id>
+trellocli --get-checklists <card-id>
+trellocli --create-checklist <card-id> "<name>"
+trellocli --add-checklist-item <checklist-id> "<name>"
+trellocli --update-checklist-item <card-id> <check-item-id> [--name "<name>"] [--state "complete|incomplete"]
+trellocli --delete-checklist <checklist-id>
 ```
 
 ## Development

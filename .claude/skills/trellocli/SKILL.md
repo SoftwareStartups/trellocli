@@ -1,9 +1,9 @@
 ---
-name: trello-cli
+name: trellocli
 description: Trello board, list and card management via CLI. Activate when user mentions "Trello" - examples: "Show my Trello tasks", "Add card to Trello", "Move on Trello", "Trello board", "List Trello", "Trello cards".
 ---
 
-# Trello CLI
+# Trellocli
 
 ## Rules
 
@@ -24,29 +24,29 @@ description: Trello board, list and card management via CLI. Activate when user 
 
 ```bash
 # 1. Find board
-trello-cli --json --get-boards | jq '.data[] | {id, name}'
+trellocli --json --get-boards | jq '.data[] | {id, name}'
 
 # 2. Find list by name
-trello-cli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "To Do") | .id'
+trellocli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "To Do") | .id'
 
 # 3. Cards in that list
-trello-cli --json --get-cards LIST_ID | jq '.data[] | {id, name, due}'
+trellocli --json --get-cards LIST_ID | jq '.data[] | {id, name, due}'
 ```
 
 ## Common Patterns
 
 ```bash
 # All cards on a board with labels
-trello-cli --json --get-all-cards BOARD_ID | jq '.data[] | {id, name, due, idList, labels: [.labels[]?.name]}'
+trellocli --json --get-all-cards BOARD_ID | jq '.data[] | {id, name, due, idList, labels: [.labels[]?.name]}'
 
 # My cards across all boards
-trello-cli --json --get-my-cards | jq '.data[] | {id, name, idBoard}'
+trellocli --json --get-my-cards | jq '.data[] | {id, name, idBoard}'
 
 # Extract a single ID (for scripting)
-trello-cli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "Done") | .id'
+trellocli --json --get-lists BOARD_ID | jq -r '.data[] | select(.name == "Done") | .id'
 
 # Check auth
-trello-cli --json --check-auth | jq '.ok'
+trellocli --json --check-auth | jq '.ok'
 ```
 
 Error codes: `AUTH_ERROR` `NOT_FOUND` `MISSING_PARAM` `HTTP_ERROR` `ERROR`
@@ -55,4 +55,4 @@ Error codes: `AUTH_ERROR` `NOT_FOUND` `MISSING_PARAM` `HTTP_ERROR` `ERROR`
 
 - **Read commands + jq:** [ref-read.md](ref-read.md)
 - **Write commands:** [ref-write.md](ref-write.md)
-- **Full help:** `trello-cli --help`
+- **Full help:** `trellocli --help`

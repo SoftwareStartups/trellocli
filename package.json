@@ -1,12 +1,12 @@
 {
-  "name": "trello-cli-ts",
+  "name": "trellocli",
   "version": "1.1.0",
   "description": "A CLI tool for Trello integration with Claude Code",
   "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "bin": {
-    "trello-cli": "build/index.js"
+    "trellocli": "build/index.js"
   },
   "files": [
     "build",

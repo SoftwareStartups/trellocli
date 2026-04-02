@@ -1,4 +1,4 @@
-# Trello CLI
+# Trellocli
 
 Bun-native TypeScript CLI for Trello board, list, and card management. Zero runtime dependencies.
 
@@ -32,7 +32,7 @@ src/
 ├── commands/
 │   └── registry.ts           # Declarative command registry (all 52 commands)
 ├── services/
-│   ├── configService.ts      # Auth config (~/.trello-cli/config.json + env vars)
+│   ├── configService.ts      # Auth config (~/.trellocli/config.json + env vars)
 │   ├── trelloApiService.ts   # Trello REST API client
 │   └── cacheService.ts       # Response caching
 ├── models/

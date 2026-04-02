@@ -49,16 +49,16 @@ tasks:
     desc: Compile to standalone binary
     cmds:
       - mkdir -p dist
-      - bun build src/index.ts --compile --outfile dist/trello-cli
+      - bun build src/index.ts --compile --outfile dist/trellocli
 
   compile:all:
     desc: Compile for all platforms
     cmds:
       - mkdir -p dist
-      - bun build src/index.ts --compile --target=bun-linux-x64 --outfile dist/trello-cli-linux-x64
-      - bun build src/index.ts --compile --target=bun-linux-arm64 --outfile dist/trello-cli-linux-arm64
-      - bun build src/index.ts --compile --target=bun-darwin-x64 --outfile dist/trello-cli-darwin-x64
-      - bun build src/index.ts --compile --target=bun-darwin-arm64 --outfile dist/trello-cli-darwin-arm64
+      - bun build src/index.ts --compile --target=bun-linux-x64 --outfile dist/trellocli-linux-x64
+      - bun build src/index.ts --compile --target=bun-linux-arm64 --outfile dist/trellocli-linux-arm64
+      - bun build src/index.ts --compile --target=bun-darwin-x64 --outfile dist/trellocli-darwin-x64
+      - bun build src/index.ts --compile --target=bun-darwin-arm64 --outfile dist/trellocli-darwin-arm64
 
   ci:
     desc: Run full CI pipeline locally

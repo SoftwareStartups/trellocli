@@ -55,7 +55,7 @@ async function main(): Promise<void> {
   }
 
   if (args[0] === '--version' || args[0] === '-v') {
-    console.log(`trello-cli v${VERSION}`);
+    console.log(`trellocli v${VERSION}`);
     return;
   }
 
@@ -66,14 +66,14 @@ async function main(): Promise<void> {
 
     if (!apiKey || !token) {
       print(
-        fail('Usage: trello-cli --set-auth <api-key> <token>', 'MISSING_PARAM')
+        fail('Usage: trellocli --set-auth <api-key> <token>', 'MISSING_PARAM')
       );
       return;
     }
 
     const { success: ok, error } = config.saveAuth(apiKey, token);
     if (ok) {
-      print(success({ message: 'Auth saved to ~/.trello-cli/config.json' }));
+      print(success({ message: 'Auth saved to ~/.trellocli/config.json' }));
     } else {
       print(fail(error ?? 'Unknown error', 'SAVE_ERROR'));
     }

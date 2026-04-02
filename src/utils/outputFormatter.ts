@@ -14,7 +14,7 @@ function stripNulls(obj: object): Record<string, unknown> {
 }
 
 export function print<T>(response: ApiResponse<T>): void {
-  if (!response.ok && !process.env.__TRELLO_CLI_TEST) {
+  if (!response.ok && !process.env.__TRELLOCLI_TEST) {
     process.exitCode = 1;
   }
   if (jsonMode) {

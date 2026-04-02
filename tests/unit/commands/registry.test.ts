@@ -329,7 +329,7 @@ describe('Command Registry', () => {
   describe('generateHelp', () => {
     test('includes version', () => {
       const help = generateHelp('1.2.3');
-      expect(help).toContain('trello-cli v1.2.3');
+      expect(help).toContain('trellocli v1.2.3');
     });
 
     test('includes all command groups', () => {

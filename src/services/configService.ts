@@ -16,12 +16,12 @@ interface EncryptedConfig {
   salt: string; // base64
 }
 
-const DEFAULT_CONFIG_DIR = path.join(os.homedir(), '.trello-cli');
+const DEFAULT_CONFIG_DIR = path.join(os.homedir(), '.trellocli');
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32;
 
 function deriveKey(salt: Buffer): Buffer {
-  const machineSecret = `${os.hostname()}:${os.userInfo().uid}:trello-cli`;
+  const machineSecret = `${os.hostname()}:${os.userInfo().uid}:trellocli`;
   return crypto.scryptSync(machineSecret, salt, KEY_LENGTH);
 }
 
@@ -148,14 +148,14 @@ export class ConfigService {
     if (!this.apiKey) {
       return {
         valid: false,
-        error: 'API Key not set. Use: trello-cli --set-auth <api-key> <token>',
+        error: 'API Key not set. Use: trellocli --set-auth <api-key> <token>',
       };
     }
 
     if (!this.token) {
       return {
         valid: false,
-        error: 'Token not set. Use: trello-cli --set-auth <api-key> <token>',
+        error: 'Token not set. Use: trellocli --set-auth <api-key> <token>',
       };
     }
 
