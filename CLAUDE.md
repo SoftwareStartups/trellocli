@@ -32,7 +32,7 @@ src/
 ├── commands/
 │   └── registry.ts           # Declarative command registry (noun-verb subcommands)
 ├── services/
-│   ├── configService.ts      # Auth config (~/.trellocli/config.json + env vars)
+│   ├── configService.ts      # Auth config (~/.config/trellocli/config.json + env vars)
 │   ├── trelloApiService.ts   # Trello REST API client
 │   └── cacheService.ts       # Response caching
 ├── models/

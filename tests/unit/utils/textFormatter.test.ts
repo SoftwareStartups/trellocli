@@ -54,9 +54,9 @@ describe('textFormatter', () => {
 
     test('formats message response', () => {
       const result = formatText(
-        success({ message: 'Auth saved to ~/.trellocli/config.json' })
+        success({ message: 'Auth saved to ~/.config/trellocli/config.json' })
       );
-      expect(result).toBe('Auth saved to ~/.trellocli/config.json');
+      expect(result).toBe('Auth saved to ~/.config/trellocli/config.json');
     });
 
     test('formats string data', () => {

@@ -16,7 +16,7 @@ interface EncryptedConfig {
   salt: string; // base64
 }
 
-const DEFAULT_CONFIG_DIR = path.join(os.homedir(), '.trellocli');
+const DEFAULT_CONFIG_DIR = path.join(os.homedir(), '.config', 'trellocli');
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32;
 
@@ -57,7 +57,7 @@ export class ConfigService {
   public apiKey: string | undefined;
   public token: string | undefined;
   private configDir: string;
-  private configFile: string;
+  readonly configFile: string;
 
   constructor(configDir?: string) {
     this.configDir = configDir ?? DEFAULT_CONFIG_DIR;

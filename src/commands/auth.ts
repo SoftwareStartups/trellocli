@@ -51,7 +51,7 @@ export async function login(flags: LoginFlags): Promise<void> {
   const config = new ConfigService(flags.configDir);
   const { success, error } = config.saveAuth(apiKey, token);
   if (success) {
-    console.log('Credentials saved to ~/.trellocli/config.json');
+    console.log(`Credentials saved to ${config.configFile}`);
   } else {
     console.error(`Error: ${error}`);
     process.exit(1);
