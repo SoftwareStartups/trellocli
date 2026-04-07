@@ -5,8 +5,8 @@ Response: `{"ok":true,"data":{...}}`. Check `.ok` after each command. Dates: `YY
 ## Auth
 
 ```bash
-trellocli auth set API_KEY TOKEN
-trellocli auth clear
+trellocli login [--api-key KEY --token TOKEN] [--skip-validation]
+trellocli logout
 ```
 
 ## Boards & Lists

@@ -46,7 +46,7 @@ trellocli --json cards mine | jq '.data[] | {id, name, idBoard}'
 trellocli --json lists get BOARD_ID | jq -r '.data[] | select(.name == "Done") | .id'
 
 # Check auth
-trellocli --json auth check | jq '.ok'
+trellocli --json auth status | jq '.ok'
 ```
 
 Error codes: `AUTH_ERROR` `NOT_FOUND` `MISSING_PARAM` `HTTP_ERROR` `ERROR`

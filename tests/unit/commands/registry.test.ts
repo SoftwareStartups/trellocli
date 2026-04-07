@@ -342,6 +342,13 @@ describe('Command Registry', () => {
       expect(help).toContain('auth');
     });
 
+    test('includes top-level login and logout commands', () => {
+      const help = generateTopHelp('1.0.0');
+      expect(help).toContain('login');
+      expect(help).toContain('logout');
+      expect(help).toContain('Top-level Commands:');
+    });
+
     test('includes options section', () => {
       const help = generateTopHelp('1.0.0');
       expect(help).toContain('--help');

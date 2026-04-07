@@ -77,6 +77,10 @@ export class ConfigService {
     return !!this.apiKey && !!this.token;
   }
 
+  get hasConfigFile(): boolean {
+    return fs.existsSync(this.configFile);
+  }
+
   private loadFromFile(): void {
     if (!fs.existsSync(this.configFile)) return;
 
@@ -148,14 +152,14 @@ export class ConfigService {
     if (!this.apiKey) {
       return {
         valid: false,
-        error: 'API Key not set. Use: trellocli auth set <api-key> <token>',
+        error: 'API Key not set. Run "trellocli login" or set TRELLO_API_KEY.',
       };
     }
 
     if (!this.token) {
       return {
         valid: false,
-        error: 'Token not set. Use: trellocli auth set <api-key> <token>',
+        error: 'Token not set. Run "trellocli login" or set TRELLO_TOKEN.',
       };
     }
 

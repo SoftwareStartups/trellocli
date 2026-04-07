@@ -10,7 +10,7 @@ import {
   validateFilePath,
   validateUrl,
 } from '../utils/paramValidation.js';
-import { success, fail } from '../models/apiResponse.js';
+import { fail } from '../models/apiResponse.js';
 
 type Validator = 'trelloId' | 'date' | 'color' | 'filePath' | 'url';
 
@@ -519,45 +519,7 @@ export const COMMANDS: CommandDef[] = [
   // Auth commands
   {
     noun: 'auth',
-    verb: 'set',
-    description: 'Save API key and token',
-    params: [positional('apiKey', 'API key'), positional('token', 'Token')],
-    async execute(_api, config, values) {
-      const params = this.params ?? [];
-      if (!validateParams(params, values)) return;
-      const apiKey = get(values, 'apiKey');
-      const token = get(values, 'token');
-      if (!apiKey || !token) {
-        print(
-          fail('Usage: trellocli auth set <api-key> <token>', 'MISSING_PARAM')
-        );
-        return;
-      }
-      const { success: ok, error } = config.saveAuth(apiKey, token);
-      if (ok) {
-        print(success({ message: 'Auth saved to ~/.trellocli/config.json' }));
-      } else {
-        print(fail(error ?? 'Unknown error', 'SAVE_ERROR'));
-      }
-    },
-  },
-  {
-    noun: 'auth',
-    verb: 'clear',
-    description: 'Clear saved authentication',
-    params: [],
-    async execute(_api, config) {
-      const { success: ok, error } = config.clearAuth();
-      if (ok) {
-        print(success({ message: 'Auth cleared' }));
-      } else {
-        print(fail(error ?? 'Unknown error', 'CLEAR_ERROR'));
-      }
-    },
-  },
-  {
-    noun: 'auth',
-    verb: 'check',
+    verb: 'status',
     description: 'Verify authentication',
     async execute(api, config) {
       const { valid, error } = config.validate();
@@ -638,7 +600,11 @@ export function generateTopHelp(version: string): string {
   const lines: string[] = [
     `trellocli v${version}`,
     '',
-    'Usage: trellocli <command> <subcommand> [args] [options]',
+    'Usage: trellocli <command> [subcommand] [args] [options]',
+    '',
+    'Top-level Commands:',
+    '  login              Save API credentials (interactive)',
+    '  logout             Remove saved credentials',
     '',
     'Commands:',
   ];

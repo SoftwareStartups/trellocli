@@ -87,10 +87,10 @@ trellocli --json workspaces boards WS_ID | jq '.data[] | {id, name}'
 |---------|------|---------|
 | `checklists list` | `CARD_ID` | Checklists on a card |
 | `boards activity` | `BOARD_ID [--limit N]` | Recent board activity |
-| `auth check` | | Verify credentials |
+| `auth status` | | Verify credentials |
 
 ```bash
 trellocli --json checklists list CARD_ID | jq '.data[] | {id, name, items: [.checkItems[] | {name, state}]}'
 trellocli --json boards activity BOARD_ID --limit 10 | jq '.data[] | {type, date, by: .memberCreator.fullName}'
-trellocli --json auth check | jq '.data | {username, fullName}'
+trellocli --json auth status | jq '.data | {username, fullName}'
 ```

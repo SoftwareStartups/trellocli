@@ -11,6 +11,7 @@ export function makeConfig(
     apiKey: 'test-key',
     token: 'test-token',
     isConfigured: true,
+    hasConfigFile: true,
     getAuthQuery: () => 'key=test-key&token=test-token',
     validate: () => ({ valid: true }),
     saveAuth: () => ({ success: true }),

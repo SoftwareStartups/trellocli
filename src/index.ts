@@ -33,6 +33,11 @@ function readVersion(): string {
 
 const VERSION = readVersion();
 
+function getFlagValue(args: string[], flag: string): string | undefined {
+  const idx = args.indexOf(flag);
+  return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
+}
+
 async function main(): Promise<void> {
   const rawArgs = process.argv.slice(2);
 
@@ -62,6 +67,23 @@ async function main(): Promise<void> {
 
   if (args[0] === '--version' || args[0] === '-v') {
     console.log(`trellocli v${VERSION}`);
+    return;
+  }
+
+  // Top-level commands (not noun-verb)
+  if (args[0] === 'login') {
+    const { login } = await import('./commands/auth.js');
+    await login({
+      apiKey: getFlagValue(args, '--api-key'),
+      token: getFlagValue(args, '--token'),
+      skipValidation: args.includes('--skip-validation'),
+    });
+    return;
+  }
+
+  if (args[0] === 'logout') {
+    const { logout } = await import('./commands/auth.js');
+    await logout();
     return;
   }
 
@@ -95,7 +117,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Auth validation: skip for all auth commands (set/clear/check handle it themselves)
+  // Auth validation: skip for auth commands (auth status handles it itself)
   const config = new ConfigService();
   if (noun !== 'auth') {
     const { valid, error } = config.validate();

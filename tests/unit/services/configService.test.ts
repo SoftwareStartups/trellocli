@@ -72,6 +72,19 @@ describe('ConfigService', () => {
     });
   });
 
+  describe('hasConfigFile', () => {
+    test('returns true when config file exists', () => {
+      const config = new ConfigService(tmpDir);
+      config.saveAuth('k', 't');
+      expect(config.hasConfigFile).toBe(true);
+    });
+
+    test('returns false when no config file', () => {
+      const config = new ConfigService(tmpDir);
+      expect(config.hasConfigFile).toBe(false);
+    });
+  });
+
   describe('isConfigured', () => {
     test('returns true when both key and token set', () => {
       process.env.TRELLO_API_KEY = 'k';
@@ -184,6 +197,7 @@ describe('ConfigService', () => {
       const result = config.validate();
       expect(result.valid).toBe(false);
       expect(result.error).toContain('API Key');
+      expect(result.error).toContain('trellocli login');
     });
 
     test('returns error when token missing', () => {
@@ -192,6 +206,7 @@ describe('ConfigService', () => {
       const result = config.validate();
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Token');
+      expect(result.error).toContain('trellocli login');
     });
   });
 });

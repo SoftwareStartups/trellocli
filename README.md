@@ -63,8 +63,8 @@ bun link
 3. Configure the CLI:
 
 ```bash
-trellocli auth set <api-key> <token>
-trellocli auth check
+trellocli login
+trellocli auth status
 ```
 
 > **Important:** The Token is different from the Secret. The Secret is for OAuth apps — you need the Token for direct API access.
@@ -101,9 +101,10 @@ cp -r .claude/skills/trellocli ~/.claude/skills/
 ### Authentication
 
 ```bash
-trellocli auth set <api-key> <token>
-trellocli auth check
-trellocli auth clear
+trellocli login                                      # Interactive prompt (hidden input)
+trellocli login --api-key KEY --token TOKEN           # Non-interactive
+trellocli logout                                     # Remove saved credentials
+trellocli auth status                                # Verify credentials
 ```
 
 ### Boards
