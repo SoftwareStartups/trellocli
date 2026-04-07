@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import packageJson from '../package.json' with { type: 'json' };
 import { ConfigService } from './services/configService.js';
 import { TrelloApiService } from './services/trelloApiService.js';
 import { CacheService } from './services/cacheService.js';
@@ -19,19 +18,7 @@ import {
   generateCommandHelp,
 } from './commands/registry.js';
 
-function readVersion(): string {
-  try {
-    const pkgPath = path.join(import.meta.dir, '..', 'package.json');
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as {
-      version: string;
-    };
-    return pkg.version;
-  } catch {
-    return '2.0.0';
-  }
-}
-
-const VERSION = readVersion();
+const VERSION = packageJson.version;
 
 function getFlagValue(args: string[], flag: string): string | undefined {
   const idx = args.indexOf(flag);
