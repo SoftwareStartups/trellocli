@@ -87,6 +87,16 @@ export function validateFilePath(value: string, name: string): boolean {
   return true;
 }
 
+export function validatePositiveInt(value: string, name: string): boolean {
+  if (!/^[1-9]\d*$/.test(value)) {
+    print(
+      fail(`Invalid ${name}: expected a positive integer`, 'INVALID_PARAM')
+    );
+    return false;
+  }
+  return true;
+}
+
 export function validateUrl(value: string, name: string): boolean {
   try {
     new URL(value);

@@ -3,6 +3,7 @@ build/
 dist/
 *.tsbuildinfo
 .env
+.env.*
 
 # Lefthook
 lefthook-local.yml

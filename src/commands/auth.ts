@@ -27,6 +27,17 @@ export async function login(flags: LoginFlags): Promise<void> {
     process.exit(1);
   }
 
+  if (!/^[0-9a-f]{32}$/i.test(apiKey)) {
+    console.error(
+      'Warning: API key does not match expected format (32-character hex string). Proceeding anyway.'
+    );
+  }
+  if (!/^[0-9a-f]{64}$/i.test(token)) {
+    console.error(
+      'Warning: Token does not match expected format (64-character hex string). Proceeding anyway.'
+    );
+  }
+
   if (!flags.skipValidation) {
     const valid = await validateCredentials(apiKey, token);
     if (!valid) {

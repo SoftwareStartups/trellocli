@@ -8,11 +8,18 @@ import {
   validateDate,
   validateColor,
   validateFilePath,
+  validatePositiveInt,
   validateUrl,
 } from '../utils/paramValidation.js';
 import { fail } from '../models/apiResponse.js';
 
-type Validator = 'trelloId' | 'date' | 'color' | 'filePath' | 'url';
+type Validator =
+  | 'trelloId'
+  | 'date'
+  | 'color'
+  | 'filePath'
+  | 'positiveInt'
+  | 'url';
 
 /** Get a required param value (guaranteed present after validateParams) */
 function get(params: Record<string, string | undefined>, key: string): string {
@@ -72,6 +79,7 @@ const VALIDATORS: Record<Validator, (v: string, l: string) => boolean> = {
   date: validateDate,
   color: validateColor,
   filePath: validateFilePath,
+  positiveInt: validatePositiveInt,
   url: validateUrl,
 };
 
@@ -143,7 +151,7 @@ export const COMMANDS: CommandDef[] = [
     'Get board activity',
     [
       positional('boardId', 'Board ID', 'trelloId'),
-      named('limit', 'Limit', '--limit'),
+      named('limit', 'Limit', '--limit', { validate: 'positiveInt' }),
     ],
     (api, p) => api.getBoardActivity(get(p, 'boardId'), p.limit)
   ),
@@ -205,7 +213,7 @@ export const COMMANDS: CommandDef[] = [
     'Get card action history',
     [
       positional('cardId', 'Card ID', 'trelloId'),
-      named('limit', 'Limit', '--limit'),
+      named('limit', 'Limit', '--limit', { validate: 'positiveInt' }),
     ],
     (api, p) => api.getCardHistory(get(p, 'cardId'), p.limit)
   ),

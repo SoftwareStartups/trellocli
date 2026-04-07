@@ -9,7 +9,8 @@
     "trellocli": "build/index.js"
   },
   "files": [
-    "build",
+    "build/**/*.js",
+    "build/**/*.d.ts",
     "README.md"
   ],
   "scripts": {
