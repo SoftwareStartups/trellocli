@@ -1,5 +1,4 @@
 import type { TrelloApiService } from '../services/trelloApiService.js';
-import type { ConfigService } from '../services/configService.js';
 import type { ApiResponse } from '../models/apiResponse.js';
 import { print } from '../utils/outputFormatter.js';
 import {
@@ -45,7 +44,6 @@ interface CommandDef {
   boolFlags?: string[];
   execute: (
     api: TrelloApiService,
-    config: ConfigService,
     params: Record<string, string | undefined>
   ) => Promise<void>;
 }
@@ -114,7 +112,7 @@ function apiCmd(
     description,
     params,
     boolFlags: opts?.boolFlags,
-    async execute(api, _config, values) {
+    async execute(api, values) {
       if (!validateParams(params, values)) return;
       const result = await apiFn(api, values);
       print(result);
@@ -494,7 +492,7 @@ export const COMMANDS: CommandDef[] = [
       named('name', 'Name', '--name'),
       named('state', 'State', '--state'),
     ],
-    async execute(api, _config, values) {
+    async execute(api, values) {
       const params = this.params ?? [];
       if (!validateParams(params, values)) return;
       if (
@@ -529,12 +527,7 @@ export const COMMANDS: CommandDef[] = [
     noun: 'auth',
     verb: 'status',
     description: 'Verify authentication',
-    async execute(api, config) {
-      const { valid, error } = config.validate();
-      if (!valid) {
-        print(fail(error ?? 'Auth not configured', 'AUTH_ERROR'));
-        return;
-      }
+    async execute(api) {
       print(await api.checkAuth());
     },
   },

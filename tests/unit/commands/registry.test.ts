@@ -11,7 +11,7 @@ import {
 } from '../../../src/commands/registry.js';
 import type { TrelloApiService } from '../../../src/services/trelloApiService.js';
 import { success } from '../../../src/models/apiResponse.js';
-import { TEST_ID, TEST_ID_2, makeConfig } from '../../helpers/testUtils.js';
+import { TEST_ID, TEST_ID_2 } from '../../helpers/testUtils.js';
 
 function makeApi(overrides: Partial<TrelloApiService> = {}): TrelloApiService {
   return {
@@ -221,14 +221,14 @@ describe('Command Registry', () => {
       const api = makeApi({ getCardsInList: async () => success(cards) });
       const cmd = getCmd('cards', 'list');
       const getOutput = captureOutput();
-      await cmd.execute(api, makeConfig(), { listId: TEST_ID_2 });
+      await cmd.execute(api, { listId: TEST_ID_2 });
       expect(getOutput()).toEqual({ ok: true, data: cards });
     });
 
     test('cards list rejects missing list ID', async () => {
       const cmd = getCmd('cards', 'list');
       const getOutput = captureOutput();
-      await cmd.execute(makeApi(), makeConfig(), { listId: '' });
+      await cmd.execute(makeApi(), { listId: '' });
       const output = getOutput() as { ok: boolean; code: string };
       expect(output.ok).toBe(false);
       expect(output.code).toBe('MISSING_PARAM');
@@ -237,7 +237,7 @@ describe('Command Registry', () => {
     test('cards create passes all fields', async () => {
       const cmd = getCmd('cards', 'create');
       const getOutput = captureOutput();
-      await cmd.execute(makeApi(), makeConfig(), {
+      await cmd.execute(makeApi(), {
         listId: TEST_ID_2,
         name: 'Test',
         desc: 'desc',
@@ -261,7 +261,7 @@ describe('Command Registry', () => {
       });
       const cmd = getCmd('cards', 'update');
       const getOutput = captureOutput();
-      await cmd.execute(api, makeConfig(), {
+      await cmd.execute(api, {
         cardId: TEST_ID,
         name: 'New Name',
       });
@@ -271,7 +271,7 @@ describe('Command Registry', () => {
     test('cards move requires both IDs', async () => {
       const cmd = getCmd('cards', 'move');
       const getOutput = captureOutput();
-      await cmd.execute(makeApi(), makeConfig(), {
+      await cmd.execute(makeApi(), {
         cardId: '',
         listId: TEST_ID_2,
       });
@@ -281,14 +281,14 @@ describe('Command Registry', () => {
     test('comments add requires card ID and text', async () => {
       const cmd = getCmd('comments', 'add');
       const getOutput = captureOutput();
-      await cmd.execute(makeApi(), makeConfig(), { cardId: '', text: 'hi' });
+      await cmd.execute(makeApi(), { cardId: '', text: 'hi' });
       expect((getOutput() as { ok: boolean }).ok).toBe(false);
     });
 
     test('cards mine works without params', async () => {
       const cmd = getCmd('cards', 'mine');
       const getOutput = captureOutput();
-      await cmd.execute(makeApi(), makeConfig(), {});
+      await cmd.execute(makeApi(), {});
       expect((getOutput() as { ok: boolean }).ok).toBe(true);
     });
 
@@ -301,7 +301,7 @@ describe('Command Registry', () => {
       });
       const cmd = getCmd('cards', 'history');
       captureOutput();
-      await cmd.execute(api, makeConfig(), {
+      await cmd.execute(api, {
         cardId: TEST_ID,
         limit: '10',
       });
@@ -321,7 +321,7 @@ describe('Command Registry', () => {
       });
       const cmd = getCmd('cards', 'copy');
       captureOutput();
-      await cmd.execute(api, makeConfig(), {
+      await cmd.execute(api, {
         cardId: TEST_ID,
         listId: TEST_ID_2,
       });

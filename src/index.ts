@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import packageJson from '../package.json' with { type: 'json' };
-import { ConfigService } from './services/configService.js';
+import { getSecret } from './auth/keychain.js';
 import { TrelloApiService } from './services/trelloApiService.js';
 import { CacheService } from './services/cacheService.js';
 import { fail } from './models/apiResponse.js';
@@ -59,7 +59,7 @@ async function main(): Promise<void> {
 
   // Top-level commands (not noun-verb)
   if (args[0] === 'login') {
-    const { login } = await import('./commands/auth.js');
+    const { login } = await import('./cli/commands/login.js');
     await login({
       apiKey: getFlagValue(args, '--api-key'),
       token: getFlagValue(args, '--token'),
@@ -69,7 +69,7 @@ async function main(): Promise<void> {
   }
 
   if (args[0] === 'logout') {
-    const { logout } = await import('./commands/auth.js');
+    const { logout } = await import('./cli/commands/logout.js');
     await logout();
     return;
   }
@@ -104,24 +104,29 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Auth validation: skip for auth commands (auth status handles it itself)
-  const config = new ConfigService();
-  if (noun !== 'auth') {
-    const { valid, error } = config.validate();
-    if (!valid) {
-      print(fail(error ?? 'Auth not configured', 'AUTH_ERROR'));
-      return;
-    }
+  // Auth resolution
+  const apiKey =
+    process.env.TRELLO_API_KEY || (await getSecret('TRELLO_API_KEY'));
+  const token = process.env.TRELLO_TOKEN || (await getSecret('TRELLO_TOKEN'));
+
+  if (!apiKey || !token) {
+    print(
+      fail(
+        'Not authenticated. Run "trellocli login" or set TRELLO_API_KEY and TRELLO_TOKEN environment variables.',
+        'AUTH_ERROR'
+      )
+    );
+    return;
   }
 
   const cache = new CacheService();
   if (noCache) cache.setEnabled(false);
-  const api = new TrelloApiService(config, cache);
+  const api = new TrelloApiService(apiKey, token, cache);
 
   try {
     const cmdArgs = args.slice(2); // strip noun + verb
     const params = parseArgs(cmd, cmdArgs);
-    await cmd.execute(api, config, params);
+    await cmd.execute(api, params);
   } catch (ex) {
     print(fail(errorMessage(ex), 'ERROR'));
   }

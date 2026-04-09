@@ -30,7 +30,6 @@ import {
 import { errorMessage } from '../utils/errorUtils.js';
 import { fetchWithResilience } from '../utils/httpClient.js';
 import type { CacheService } from './cacheService.js';
-import type { ConfigService } from './configService.js';
 
 export interface UpdateCardOptions {
   name?: string;
@@ -116,11 +115,13 @@ const TTL_MED = 2 * 60 * 1000; // 2 min: cards, checklists
 const TTL_SHORT = 30 * 1000; // 30 sec: actions, comments
 
 export class TrelloApiService {
-  private config: ConfigService;
+  private apiKey: string;
+  private token: string;
   private cache?: CacheService;
 
-  constructor(config: ConfigService, cache?: CacheService) {
-    this.config = config;
+  constructor(apiKey: string, token: string, cache?: CacheService) {
+    this.apiKey = apiKey;
+    this.token = token;
     this.cache = cache;
   }
 
@@ -153,7 +154,7 @@ export class TrelloApiService {
 
   private buildUrl(endpoint: string, extraParams?: string): string {
     const sep = endpoint.includes('?') ? '&' : '?';
-    let url = `${BASE_URL}${endpoint}${sep}${this.config.getAuthQuery()}`;
+    let url = `${BASE_URL}${endpoint}${sep}key=${this.apiKey}&token=${this.token}`;
     if (extraParams) {
       url += `&${extraParams}`;
     }

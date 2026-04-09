@@ -12,7 +12,7 @@ import {
   mockFetchResponse,
   restoreFetch,
 } from '../../helpers/mockFetch.js';
-import { makeConfig } from '../../helpers/testUtils.js';
+import { TEST_API_KEY, TEST_TOKEN } from '../../helpers/testUtils.js';
 
 function getLastFetchUrl(): string {
   return (globalThis.fetch as ReturnType<typeof mock>).mock
@@ -31,7 +31,7 @@ describe('TrelloApiService', () => {
 
   beforeEach(() => {
     process.env.TRELLO_RETRY_BASE_MS = '1';
-    api = new TrelloApiService(makeConfig());
+    api = new TrelloApiService(TEST_API_KEY, TEST_TOKEN);
   });
 
   afterEach(() => {
