@@ -59,6 +59,8 @@ tasks:
       - bun build src/index.ts --compile --target=bun-linux-arm64 --outfile dist/trellocli-linux-arm64
       - bun build src/index.ts --compile --target=bun-darwin-x64 --outfile dist/trellocli-darwin-x64
       - bun build src/index.ts --compile --target=bun-darwin-arm64 --outfile dist/trellocli-darwin-arm64
+      - bun build src/index.ts --compile --target=bun-windows-x64 --outfile dist/trellocli-windows-x64.exe
+      - bun build src/index.ts --compile --target=bun-windows-arm64 --outfile dist/trellocli-windows-arm64.exe
 
   ci:
     desc: Run full CI pipeline locally

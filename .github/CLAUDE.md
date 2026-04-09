@@ -26,13 +26,14 @@ Always verify the SHA matches the expected release tag before updating.
 
 ## CI Workflow (`workflows/ci.yml`)
 
-- Triggers: push to any branch, PRs to main
-- Steps: format check, lint, typecheck, then build
+- Triggers: push to any branch, PRs to `main`
+- Jobs: lint-and-typecheck → build
+- Uses `task` commands for all CI steps
 - Permissions: `contents: read` only
 
 ## Release Workflow (`workflows/release.yml`)
 
 - Triggers: push of `v*` tags
-- Waits for CI to pass on same commit
-- Builds 4 platform binaries (linux-x64, linux-arm64, darwin-x64, darwin-arm64)
-- Creates GitHub release with all binaries via `gh release create`
+- Verifies CI passed for the tagged commit before building
+- Matrix build: linux-x64, linux-arm64, darwin-x64, darwin-arm64, windows-x64, windows-arm64 (6 platforms)
+- Creates GitHub release with compiled binaries

@@ -15,28 +15,36 @@ permissions:
 
 jobs:
   lint-and-typecheck:
-    name: Lint and typecheck
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - name: Setup Bun environment
         uses: ./.github/actions/setup-bun-env
-      - name: Check formatting
-        run: bunx biome format .
+
+      - name: Format check
+        run: task format:check
+
       - name: Lint
-        run: bunx biome lint .
+        run: task lint
+
       - name: Typecheck
-        run: bunx tsc --noEmit -p tsconfig.check.json
+        run: task typecheck
 
   build:
     name: Build
-    needs: [lint-and-typecheck]
+    needs: lint-and-typecheck
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - name: Setup Bun environment
         uses: ./.github/actions/setup-bun-env
-      - name: Build TypeScript
-        run: bunx tsc
+
+      - name: Build
+        run: task build
