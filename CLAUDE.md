@@ -2,6 +2,14 @@
 
 Bun-native TypeScript CLI for Trello board, list, and card management. Zero runtime dependencies.
 
+## Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `TRELLO_API_KEY` | Trello API key (overrides config file) |
+| `TRELLO_TOKEN` | Trello API token (overrides config file) |
+| `TRELLO_DEBUG` | Set to `1` for verbose HTTP logging |
+
 ## Commands
 
 ```bash
@@ -21,7 +29,7 @@ task ci                              # Full CI locally: clean -> install -> form
 
 # Release
 task compile                         # Build standalone binary for current platform
-task compile:all                     # Build binaries for all 4 platforms
+task compile:all                     # Build binaries for all 6 platforms
 ```
 
 ## Architecture
@@ -49,19 +57,3 @@ tests/
 ├── helpers/                  # Test utilities (mockFetch, setup, testUtils)
 └── unit/                     # Unit tests mirroring src/ structure
 ```
-
-## Code Style
-
-- TypeScript strict mode, ES2022 target, NodeNext modules
-- Biome for linting/formatting (indent 2, single quotes, semicolons, trailing commas es5)
-- Bun runtime
-- Default output is human-readable text; `--json` flag switches to compact JSON
-- API responses use `ApiResponse<T>`: `{"ok":true,"data":...}` or `{"ok":false,"error":"...","code":"..."}`
-
-## Environment Variables
-
-| Variable | Purpose |
-|----------|---------|
-| `TRELLO_API_KEY` | Trello API key (overrides config file) |
-| `TRELLO_TOKEN` | Trello API token (overrides config file) |
-| `TRELLO_DEBUG` | Set to `1` for verbose HTTP logging |
