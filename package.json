@@ -1,5 +1,5 @@
 {
-  "name": "trellocli",
+  "name": "@softwarestartups/trellocli",
   "version": "2.1.0",
   "description": "A CLI tool for Trello integration with Claude Code",
   "type": "module",
