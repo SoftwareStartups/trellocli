@@ -1,4 +1,4 @@
-import { describe, test, expect, spyOn, afterEach } from 'bun:test';
+import { describe, test, expect, type spyOn, afterEach } from 'bun:test';
 import {
   COMMANDS,
   COMMAND_MAP,
@@ -11,7 +11,11 @@ import {
 } from '../../../src/commands/registry.js';
 import type { TrelloApiService } from '../../../src/services/trelloApiService.js';
 import { success } from '../../../src/models/apiResponse.js';
-import { TEST_ID, TEST_ID_2 } from '../../helpers/testUtils.js';
+import {
+  captureOutput as createCapture,
+  TEST_ID,
+  TEST_ID_2,
+} from '../../helpers/testUtils.js';
 
 function makeApi(overrides: Partial<TrelloApiService> = {}): TrelloApiService {
   return {
@@ -108,15 +112,17 @@ function getCmd(noun: string, verb: string) {
   return cmd;
 }
 
-let logSpy: ReturnType<typeof spyOn>;
+let logSpy: ReturnType<typeof spyOn> | undefined;
 
 afterEach(() => {
   logSpy?.mockRestore();
+  logSpy = undefined;
 });
 
 function captureOutput(): () => unknown {
-  logSpy = spyOn(console, 'log').mockImplementation(() => {});
-  return () => JSON.parse(logSpy.mock.calls[0]?.[0] as string);
+  const { spy, getOutput } = createCapture();
+  logSpy = spy;
+  return getOutput;
 }
 
 describe('Command Registry', () => {

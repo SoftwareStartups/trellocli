@@ -1,6 +1,7 @@
 import { sanitizeCredential, setSecret } from '../../auth/keychain.js';
 import { TrelloApiService } from '../../services/trelloApiService.js';
 import { CacheService } from '../../services/cacheService.js';
+import { errorMessage } from '../../utils/errorUtils.js';
 import { promptHidden } from '../../utils/prompt.js';
 
 export interface LoginFlags {
@@ -15,10 +16,8 @@ export async function login(flags: LoginFlags): Promise<void> {
   let apiKey: string;
   try {
     apiKey = sanitizeCredential(rawKey);
-  } catch (err: unknown) {
-    console.error(
-      `Error: ${err instanceof Error ? err.message : 'Invalid credential.'}`
-    );
+  } catch (err) {
+    console.error(`Error: ${errorMessage(err)}`);
     process.exit(1);
   }
 
@@ -27,10 +26,8 @@ export async function login(flags: LoginFlags): Promise<void> {
   let token: string;
   try {
     token = sanitizeCredential(rawToken);
-  } catch (err: unknown) {
-    console.error(
-      `Error: ${err instanceof Error ? err.message : 'Invalid credential.'}`
-    );
+  } catch (err) {
+    console.error(`Error: ${errorMessage(err)}`);
     process.exit(1);
   }
 

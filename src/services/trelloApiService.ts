@@ -30,6 +30,12 @@ import {
 import { errorMessage } from '../utils/errorUtils.js';
 import { fetchWithResilience } from '../utils/httpClient.js';
 import type { CacheService } from './cacheService.js';
+import {
+  pickFields,
+  transformAction,
+  transformChecklist,
+  transformComment,
+} from './responseHelpers.js';
 
 export interface UpdateCardOptions {
   name?: string;
@@ -54,65 +60,37 @@ function buildForm(
   return form;
 }
 
-function isEmptyForm(form: URLSearchParams): boolean {
-  return form.toString() === '';
-}
-
-/** Strip an object or array of objects to only the listed fields. */
-function pickFields(data: unknown, fields: readonly string[]): unknown {
-  if (Array.isArray(data)) {
-    return data.map((item) => pickFields(item, fields));
+/** Build form, or return a NO_PARAMS failure if no fields were provided. */
+function requireForm(
+  fields: Record<string, string | undefined>
+): URLSearchParams | ApiResponse<never> {
+  const form = buildForm(fields);
+  if (form.toString() === '') {
+    return fail('No update parameters provided', 'NO_PARAMS');
   }
-  if (typeof data !== 'object' || data === null) return data;
-  const source = data as Record<string, unknown>;
-  const result: Record<string, unknown> = {};
-  for (const f of fields) {
-    if (f in source) result[f] = source[f];
-  }
-  return result;
-}
-
-function transformComment(data: unknown): unknown {
-  const strip = (c: Record<string, unknown>) => ({
-    ...c,
-    data:
-      c.data && typeof c.data === 'object'
-        ? { text: (c.data as Record<string, unknown>).text }
-        : c.data,
-    memberCreator: c.memberCreator
-      ? pickFields(c.memberCreator, MEMBER_FIELDS)
-      : c.memberCreator,
-  });
-  if (Array.isArray(data)) return data.map(strip);
-  return strip(data as Record<string, unknown>);
-}
-
-function transformAction(data: unknown): unknown {
-  const strip = (a: Record<string, unknown>) => ({
-    ...a,
-    memberCreator: a.memberCreator
-      ? pickFields(a.memberCreator, MEMBER_FIELDS)
-      : a.memberCreator,
-  });
-  if (Array.isArray(data)) return data.map(strip);
-  return strip(data as Record<string, unknown>);
-}
-
-function transformChecklist(data: unknown): unknown {
-  const strip = (cl: Record<string, unknown>) => ({
-    ...cl,
-    checkItems: Array.isArray(cl.checkItems)
-      ? pickFields(cl.checkItems, CHECKITEM_FIELDS)
-      : cl.checkItems,
-  });
-  if (Array.isArray(data)) return data.map(strip);
-  return strip(data as Record<string, unknown>);
+  return form;
 }
 
 // Cache TTLs in milliseconds
 const TTL_LONG = 5 * 60 * 1000; // 5 min: boards, lists, labels, members, workspaces
 const TTL_MED = 2 * 60 * 1000; // 2 min: cards, checklists
 const TTL_SHORT = 30 * 1000; // 30 sec: actions, comments
+
+const CACHE_KEYS = {
+  myBoards: '/members/me/boards',
+  myCards: '/members/me/cards',
+  cards: '/cards',
+  lists: '/lists',
+  boards: '/boards',
+  labels: '/labels',
+  checklists: '/checklists',
+  card: (id: string) => `/cards/${id}`,
+  cardActions: (id: string) => `/cards/${id}/actions`,
+  cardAttachments: (id: string) => `/cards/${id}/attachments`,
+  cardChecklists: (id: string) => `/cards/${id}/checklists`,
+  boardLists: (id: string) => `/boards/${id}/lists`,
+  boardLabels: (id: string) => `/boards/${id}/labels`,
+} as const;
 
 export class TrelloApiService {
   private apiKey: string;
@@ -237,7 +215,7 @@ export class TrelloApiService {
     desc?: string,
     workspaceId?: string
   ): Promise<ApiResponse<Board>> {
-    this.invalidateCache('/members/me/boards');
+    this.invalidateCache(CACHE_KEYS.myBoards);
     return this.request<Board>('/boards', {
       method: 'POST',
       body: buildForm({ name, desc, idOrganization: workspaceId }),
@@ -278,7 +256,7 @@ export class TrelloApiService {
     boardId: string,
     name: string
   ): Promise<ApiResponse<TrelloList>> {
-    this.invalidateCache(`/boards/${boardId}/lists`);
+    this.invalidateCache(CACHE_KEYS.boardLists(boardId));
     return this.request<TrelloList>('/lists', {
       method: 'POST',
       extraParams: `name=${encodeURIComponent(name)}&idBoard=${boardId}`,
@@ -287,7 +265,7 @@ export class TrelloApiService {
   }
 
   async archiveList(listId: string): Promise<ApiResponse<TrelloList>> {
-    this.invalidateCache('/lists/', '/boards/');
+    this.invalidateCache(CACHE_KEYS.lists, CACHE_KEYS.boards);
     return this.request<TrelloList>(`/lists/${listId}/closed`, {
       method: 'PUT',
       body: buildForm({ value: 'true' }),
@@ -331,7 +309,7 @@ export class TrelloApiService {
     due?: string,
     start?: string
   ): Promise<ApiResponse<Card>> {
-    this.invalidateCache('/cards', '/lists/');
+    this.invalidateCache(CACHE_KEYS.cards, CACHE_KEYS.lists);
     return this.request<Card>('/cards', {
       method: 'POST',
       body: buildForm({ idList: listId, name, desc, due, start }),
@@ -343,7 +321,7 @@ export class TrelloApiService {
     cardId: string,
     options: UpdateCardOptions
   ): Promise<ApiResponse<Card>> {
-    const formData = buildForm({
+    const formOrError = requireForm({
       name: options.name,
       desc: options.desc,
       due: options.due,
@@ -353,15 +331,16 @@ export class TrelloApiService {
       start: options.start,
       dueComplete: options.dueComplete,
     });
+    if (!(formOrError instanceof URLSearchParams)) return formOrError;
 
-    if (isEmptyForm(formData)) {
-      return fail('No update parameters provided', 'NO_PARAMS');
-    }
-
-    this.invalidateCache(`/cards/${cardId}`, '/lists/', '/boards/');
+    this.invalidateCache(
+      CACHE_KEYS.card(cardId),
+      CACHE_KEYS.lists,
+      CACHE_KEYS.boards
+    );
     return this.request<Card>(`/cards/${cardId}`, {
       method: 'PUT',
-      body: formData,
+      body: formOrError,
       notFoundMessage: 'Card not found',
       pick: CARD_FIELDS,
     });
@@ -372,7 +351,11 @@ export class TrelloApiService {
   }
 
   async archiveCard(cardId: string): Promise<ApiResponse<Card>> {
-    this.invalidateCache(`/cards/${cardId}`, '/lists/', '/boards/');
+    this.invalidateCache(
+      CACHE_KEYS.card(cardId),
+      CACHE_KEYS.lists,
+      CACHE_KEYS.boards
+    );
     return this.request<Card>(`/cards/${cardId}`, {
       method: 'PUT',
       body: buildForm({ closed: 'true' }),
@@ -382,7 +365,11 @@ export class TrelloApiService {
   }
 
   async deleteCard(cardId: string): Promise<ApiResponse<{ deleted: boolean }>> {
-    this.invalidateCache(`/cards/${cardId}`, '/lists/', '/boards/');
+    this.invalidateCache(
+      CACHE_KEYS.card(cardId),
+      CACHE_KEYS.lists,
+      CACHE_KEYS.boards
+    );
     return this.request(`/cards/${cardId}`, {
       method: 'DELETE',
       notFoundMessage: 'Card not found',
@@ -409,7 +396,7 @@ export class TrelloApiService {
     cardId: string,
     text: string
   ): Promise<ApiResponse<Comment>> {
-    this.invalidateCache(`/cards/${cardId}/actions`);
+    this.invalidateCache(CACHE_KEYS.cardActions(cardId));
     return this.request<Comment>(`/cards/${cardId}/actions/comments`, {
       method: 'POST',
       extraParams: `text=${encodeURIComponent(text)}`,
@@ -424,7 +411,7 @@ export class TrelloApiService {
     commentId: string,
     text: string
   ): Promise<ApiResponse<Comment>> {
-    this.invalidateCache(`/cards/${cardId}/actions`);
+    this.invalidateCache(CACHE_KEYS.cardActions(cardId));
     return this.request<Comment>(
       `/cards/${cardId}/actions/${commentId}/comments`,
       {
@@ -441,7 +428,7 @@ export class TrelloApiService {
     cardId: string,
     commentId: string
   ): Promise<ApiResponse<{ deleted: boolean }>> {
-    this.invalidateCache(`/cards/${cardId}/actions`);
+    this.invalidateCache(CACHE_KEYS.cardActions(cardId));
     return this.request(`/cards/${cardId}/actions/${commentId}/comments`, {
       method: 'DELETE',
       notFoundMessage: 'Card or comment not found',
@@ -467,7 +454,7 @@ export class TrelloApiService {
     filePath: string,
     name?: string
   ): Promise<ApiResponse<Attachment>> {
-    this.invalidateCache(`/cards/${cardId}/attachments`);
+    this.invalidateCache(CACHE_KEYS.cardAttachments(cardId));
     let fileBuffer: Buffer;
     try {
       fileBuffer = fs.readFileSync(filePath);
@@ -496,7 +483,7 @@ export class TrelloApiService {
     attachUrl: string,
     name?: string
   ): Promise<ApiResponse<Attachment>> {
-    this.invalidateCache(`/cards/${cardId}/attachments`);
+    this.invalidateCache(CACHE_KEYS.cardAttachments(cardId));
     return this.request<Attachment>(`/cards/${cardId}/attachments`, {
       method: 'POST',
       body: buildForm({ url: attachUrl, name }),
@@ -509,7 +496,7 @@ export class TrelloApiService {
     cardId: string,
     attachmentId: string
   ): Promise<ApiResponse<{ deleted: boolean }>> {
-    this.invalidateCache(`/cards/${cardId}/attachments`);
+    this.invalidateCache(CACHE_KEYS.cardAttachments(cardId));
     return this.request(`/cards/${cardId}/attachments/${attachmentId}`, {
       method: 'DELETE',
       notFoundMessage: 'Attachment not found',
@@ -523,7 +510,7 @@ export class TrelloApiService {
     targetListId: string,
     keepFromSource: string = 'all'
   ): Promise<ApiResponse<Card>> {
-    this.invalidateCache('/cards', '/lists/');
+    this.invalidateCache(CACHE_KEYS.cards, CACHE_KEYS.lists);
     return this.request<Card>('/cards', {
       method: 'POST',
       body: buildForm({
@@ -575,7 +562,7 @@ export class TrelloApiService {
     name: string,
     color: string
   ): Promise<ApiResponse<Label>> {
-    this.invalidateCache(`/boards/${boardId}/labels`);
+    this.invalidateCache(CACHE_KEYS.boardLabels(boardId));
     return this.request<Label>('/labels', {
       method: 'POST',
       body: buildForm({ name, color, idBoard: boardId }),
@@ -588,16 +575,13 @@ export class TrelloApiService {
     name?: string,
     color?: string
   ): Promise<ApiResponse<Label>> {
-    const formData = buildForm({ name, color });
+    const formOrError = requireForm({ name, color });
+    if (!(formOrError instanceof URLSearchParams)) return formOrError;
 
-    if (isEmptyForm(formData)) {
-      return fail('No update parameters provided', 'NO_PARAMS');
-    }
-
-    this.invalidateCache('/labels');
+    this.invalidateCache(CACHE_KEYS.labels);
     return this.request<Label>(`/labels/${labelId}`, {
       method: 'PUT',
-      body: formData,
+      body: formOrError,
       notFoundMessage: 'Label not found',
       pick: LABEL_FIELDS,
     });
@@ -606,7 +590,7 @@ export class TrelloApiService {
   async deleteLabel(
     labelId: string
   ): Promise<ApiResponse<{ deleted: boolean }>> {
-    this.invalidateCache('/labels');
+    this.invalidateCache(CACHE_KEYS.labels);
     return this.request(`/labels/${labelId}`, {
       method: 'DELETE',
       notFoundMessage: 'Label not found',
@@ -631,7 +615,7 @@ export class TrelloApiService {
     cardId: string,
     memberId: string
   ): Promise<ApiResponse<Member[]>> {
-    this.invalidateCache(`/cards/${cardId}`);
+    this.invalidateCache(CACHE_KEYS.card(cardId));
     return this.request<Member[]>(`/cards/${cardId}/idMembers`, {
       method: 'POST',
       extraParams: `value=${memberId}`,
@@ -644,7 +628,7 @@ export class TrelloApiService {
     cardId: string,
     memberId: string
   ): Promise<ApiResponse<{ removed: boolean }>> {
-    this.invalidateCache(`/cards/${cardId}`);
+    this.invalidateCache(CACHE_KEYS.card(cardId));
     return this.request(`/cards/${cardId}/idMembers/${memberId}`, {
       method: 'DELETE',
       notFoundMessage: 'Card or member not found',
@@ -695,7 +679,7 @@ export class TrelloApiService {
     cardId: string,
     name: string
   ): Promise<ApiResponse<Checklist>> {
-    this.invalidateCache(`/cards/${cardId}/checklists`);
+    this.invalidateCache(CACHE_KEYS.cardChecklists(cardId));
     return this.request<Checklist>('/checklists', {
       method: 'POST',
       body: buildForm({ idCard: cardId, name }),
@@ -708,7 +692,7 @@ export class TrelloApiService {
     checklistId: string,
     name: string
   ): Promise<ApiResponse<CheckItem>> {
-    this.invalidateCache('/checklists');
+    this.invalidateCache(CACHE_KEYS.checklists);
     return this.request<CheckItem>(`/checklists/${checklistId}/checkItems`, {
       method: 'POST',
       extraParams: `name=${encodeURIComponent(name)}`,
@@ -723,18 +707,15 @@ export class TrelloApiService {
     name?: string,
     state?: string
   ): Promise<ApiResponse<CheckItem>> {
-    const formData = buildForm({ name, state });
+    const formOrError = requireForm({ name, state });
+    if (!(formOrError instanceof URLSearchParams)) return formOrError;
 
-    if (isEmptyForm(formData)) {
-      return fail('No update parameters provided', 'NO_PARAMS');
-    }
-
-    this.invalidateCache('/checklists', `/cards/${cardId}`);
+    this.invalidateCache(CACHE_KEYS.checklists, CACHE_KEYS.card(cardId));
     return this.request<CheckItem>(
       `/cards/${cardId}/checkItem/${checkItemId}`,
       {
         method: 'PUT',
-        body: formData,
+        body: formOrError,
         notFoundMessage: 'Card or check item not found',
         pick: CHECKITEM_FIELDS,
       }
@@ -744,7 +725,7 @@ export class TrelloApiService {
   async deleteChecklist(
     checklistId: string
   ): Promise<ApiResponse<{ deleted: boolean }>> {
-    this.invalidateCache('/checklists');
+    this.invalidateCache(CACHE_KEYS.checklists);
     return this.request(`/checklists/${checklistId}`, {
       method: 'DELETE',
       notFoundMessage: 'Checklist not found',

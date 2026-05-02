@@ -9,6 +9,7 @@ import {
   validateFilePath,
   validatePositiveInt,
   validateUrl,
+  type Validator as ValidatorFn,
 } from '../utils/paramValidation.js';
 import { fail } from '../models/apiResponse.js';
 
@@ -72,7 +73,7 @@ function named(
   };
 }
 
-const VALIDATORS: Record<Validator, (v: string, l: string) => boolean> = {
+const VALIDATORS: Record<Validator, ValidatorFn> = {
   trelloId: validateTrelloId,
   date: validateDate,
   color: validateColor,
@@ -87,9 +88,19 @@ export function validateParams(
 ): boolean {
   for (const p of params) {
     const val = values[p.name];
-    if (p.required && !requireParam(val ?? '', p.label)) return false;
+    if (p.required) {
+      const err = requireParam(val ?? '', p.label);
+      if (err) {
+        print(fail(err.message, err.code));
+        return false;
+      }
+    }
     if (p.validate && val) {
-      if (!VALIDATORS[p.validate](val, p.label)) return false;
+      const err = VALIDATORS[p.validate](val, p.label);
+      if (err) {
+        print(fail(err.message, err.code));
+        return false;
+      }
     }
   }
   return true;
