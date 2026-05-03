@@ -69,22 +69,16 @@ trellocli auth status
 
 > **Important:** The Token is different from the Secret. The Secret is for OAuth apps — you need the Token for direct API access.
 
-## Usage with Claude Code
+## Use with Claude Code
 
-Simply mention "Trello" when talking to Claude Code:
-
-```
-"Show my Trello tasks"
-"Add a new card to Trello: Login page design"
-"Move this card to Done on Trello"
-"List my Trello boards"
-```
-
-This repo includes a Claude Code skill (`.claude/skills/trellocli/`) that teaches Claude which commands to run. To install:
+This repo is a Claude Code plugin marketplace. Install the companion skill so Claude Code can drive `trellocli` for you:
 
 ```bash
-cp -r .claude/skills/trellocli ~/.claude/skills/
+/plugin marketplace add SoftwareStartups/trellocli
+/plugin install trellocli@softwarestartups-trellocli
 ```
+
+Once installed, just ask Claude in plain language (e.g., "Show open cards in my Roadmap board") and the skill will activate automatically. The plugin tracks this repo's releases — run `/plugin marketplace update softwarestartups-trellocli` to get the latest skill revisions.
 
 ## Command Reference
 

@@ -1,0 +1,14 @@
+{
+  "name": "softwarestartups-trellocli",
+  "owner": {
+    "name": "SoftwareStartups",
+    "url": "https://github.com/SoftwareStartups"
+  },
+  "plugins": [
+    {
+      "name": "trellocli",
+      "source": ".",
+      "description": "Trello board, list and card management via CLI. Activate when user mentions \"Trello\"."
+    }
+  ]
+}

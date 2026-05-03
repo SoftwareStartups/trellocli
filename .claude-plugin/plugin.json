@@ -1,0 +1,10 @@
+{
+  "name": "trellocli",
+  "description": "Trello board, list and card management via CLI. Activate when user mentions \"Trello\".",
+  "version": "2.2.1",
+  "author": {
+    "name": "SoftwareStartups"
+  },
+  "homepage": "https://github.com/SoftwareStartups/trellocli",
+  "license": "Proprietary"
+}
