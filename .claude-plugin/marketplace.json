@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "trellocli",
-      "source": ".",
+      "source": { "source": "github", "repo": "SoftwareStartups/trellocli" },
       "description": "Trello board, list and card management via CLI. Activate when user mentions \"Trello\"."
     }
   ]
