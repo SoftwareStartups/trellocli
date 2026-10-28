@@ -39,9 +39,9 @@
   "author": "SoftwareStartups",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^2.4.13",
-    "bun-types": "^1.3.13",
-    "lefthook": "2.1.6",
+    "@biomejs/biome": "^2.6.3",
+    "bun-types": "^1.4.4",
+    "lefthook": "2.2.2",
     "typescript": "^6.0.3"
   }
 }
